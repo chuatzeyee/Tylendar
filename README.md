@@ -83,5 +83,14 @@ fails it leaves yesterday on screen and retries in an hour.
 
 Lunar calendar math by [lunar-python](https://github.com/6tail/lunar-python)
 (MIT), verified against the Hong Kong Observatory conversion tables.
-Fonts: Noto Serif SC, Noto Sans SC, and Inter, all under the SIL Open
-Font License, bundled in `generator/fonts/`.
+
+Fonts, all under the SIL Open Font License, bundled in
+`generator/fonts/`:
+
+- [Chiron Sung HK](https://github.com/chiron-fonts/chiron-sung-hk) for
+  Chinese text, a Hong Kong Song style face in the spirit of the MTR
+  signage typeface, subset to the characters the almanac can emit
+  (see `generator/subset_fonts.py`)
+- [Fraunces](https://github.com/undercasetype/Fraunces) for Latin text
+  and the large date numeral
+- Noto Sans SC for the small chip labels, same subset

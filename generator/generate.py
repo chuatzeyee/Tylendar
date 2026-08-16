@@ -31,9 +31,9 @@ RED = (186, 32, 41)
 YELLOW = (236, 183, 15)
 PALETTE = {BLACK: 0b00, WHITE: 0b01, YELLOW: 0b10, RED: 0b11}
 
-SERIF = str(ROOT / "fonts" / "NotoSerifSC.ttf")
+SERIF = str(ROOT / "fonts" / "ChironSungHK.ttf")
 SANS_SC = str(ROOT / "fonts" / "NotoSansSC.ttf")
-INTER = str(ROOT / "fonts" / "Inter.ttf")
+LATIN = str(ROOT / "fonts" / "Fraunces.ttf")
 
 TIMEZONE = "Asia/Singapore"
 YI_JI_MAX = 4
@@ -50,7 +50,7 @@ CN_NUM = "一二三四五六七八九十"
 
 def serif(size, weight=400):
     font = ImageFont.truetype(SERIF, size)
-    font.set_variation_by_axes([weight])
+    font.set_variation_by_axes([weight, 0])
     return font
 
 
@@ -60,9 +60,9 @@ def sans_sc(size, weight=400):
     return font
 
 
-def inter(size, weight=400, opsz=32):
-    font = ImageFont.truetype(INTER, size)
-    font.set_variation_by_axes([opsz, weight])
+def latin(size, weight=400, opsz=32, soft=0):
+    font = ImageFont.truetype(LATIN, size)
+    font.set_variation_by_axes([opsz, weight, soft, 0])
     return font
 
 
@@ -142,8 +142,8 @@ def render(d):
     accent = RED if (hl["is_sunday"] or hl["festivals"] or hl["jieqi_today"]) else BLACK
 
     # Header: lunar month top left, ganzhi seal top right
-    draw_text(img, (MARGIN, 64), f"{hl['year']}", inter(30, 550), BLACK)
-    draw_text(img, (MARGIN, 104), hl["month_en"], inter(21, 600), BLACK, tracking=6)
+    draw_text(img, (MARGIN, 64), f"{hl['year']}", latin(30, 550), BLACK)
+    draw_text(img, (MARGIN, 104), hl["month_en"], latin(21, 600), BLACK, tracking=6)
 
     seal = 78
     sx, sy = W - MARGIN - seal, 56
@@ -156,9 +156,9 @@ def render(d):
     draw.rectangle([MARGIN, 168, W - MARGIN, 169], fill=BLACK)
 
     # The day
-    draw_text(img, (W / 2, 340), str(hl["day"]), inter(330, 200, opsz=144), accent, anchor="mm")
+    draw_text(img, (W / 2, 340), str(hl["day"]), latin(330, 200, opsz=144), accent, anchor="mm")
     draw_text(img, (W / 2, 532), hl["weekday_cn"], sans_sc(30, 500), BLACK, anchor="mm", tracking=8)
-    draw_text(img, (W / 2, 574), hl["weekday_en"], inter(17, 550), BLACK, anchor="mm", tracking=7)
+    draw_text(img, (W / 2, 574), hl["weekday_en"], latin(17, 550), BLACK, anchor="mm", tracking=7)
 
     # Divider with yellow diamond
     dy = 624
