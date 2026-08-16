@@ -9,15 +9,15 @@ pillars, zodiac year, solar terms, festivals, and the daily yi and ji.
 
 ## How it works
 
-1. A GitHub Action in this repo runs every night at 00:05 Singapore time.
-   It renders the new day with Python and Pillow, quantizes it to the four
-   panel colors, and commits `output/tylendar.bin` (153600 bytes, 2 bits
-   per pixel) plus a `preview.png`.
-2. An ESP32 behind the frame wakes from deep sleep at 00:20, joins WiFi,
-   downloads the binary, and streams it straight to the panel. No frame
-   buffer, no server, nothing to host.
+1. A GitHub Action in this repo runs three times a day, at 00:05, 07:05,
+   and 12:35 Singapore time. It renders the page with Python and Pillow,
+   quantizes it to the four panel colors, and commits `output/tylendar.bin`
+   (153600 bytes, 2 bits per pixel) plus a `preview.png`.
+2. An ESP32 behind the frame wakes from deep sleep at 00:20, 07:30, and
+   13:00, joins WiFi, downloads the binary, and streams it straight to
+   the panel. No frame buffer, no server, nothing to host.
 3. The panel refreshes for about 20 seconds, then both the panel and the
-   ESP32 go back to deep sleep for 24 hours.
+   ESP32 go back to deep sleep until the next scheduled wake.
 
 ## Hardware
 
@@ -33,7 +33,7 @@ pillars, zodiac year, solar terms, festivals, and the daily yi and ji.
 ```
 generator/   Python renderer, fonts, run: python3 generator/generate.py
 firmware/    Arduino sketch for the ESP32-L, panel driver included
-output/      Rendered binary and preview, updated nightly by Actions
+output/      Rendered binary and preview, updated three times a day
 docs/        Flashing guide for macOS, hardware assembly guide
 ```
 
@@ -58,12 +58,12 @@ docs/        Flashing guide for macOS, hardware assembly guide
    gh secret set ICS_URL
    ```
 
-   The nightly render then replaces the two small almanac lines (zodiac
-   clash and nayin) with the day's first two events. Days with no events
-   fall back to the almanac lines. The secret address stays in GitHub
+   Each render then replaces the two small almanac lines (zodiac clash
+   and nayin) with the day's first two events. Days with no events fall
+   back to the almanac lines. The secret address stays in GitHub
    Actions; nothing from your calendar is committed except the rendered
-   pixels. Since rendering happens just after midnight, events added
-   during the day appear the next morning.
+   pixels. Events added during the day appear at the next refresh, so
+   by 07:30 or 13:00 at the latest.
 
 ## Renderer
 
@@ -92,7 +92,7 @@ eight registers differ from the closest GxEPD2 driver, they are the
 factory tuned booster and waveform values for this exact film.
 
 The sketch never refreshes a partial download. If WiFi or the download
-fails it leaves yesterday on screen and retries in an hour.
+fails it leaves the previous image on screen and retries in an hour.
 
 ## Credits
 

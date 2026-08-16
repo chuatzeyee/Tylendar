@@ -4,17 +4,17 @@
 #define WIFI_SSID "YOUR_WIFI_SSID"
 #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
 
-// Where the rendered image lives. GitHub Actions in this repo updates it
-// every night just after midnight Singapore time.
+// Where the rendered image lives. GitHub Actions in this repo re-renders
+// it 15 to 25 minutes before each wake time below.
 #define IMAGE_URL "https://raw.githubusercontent.com/chuatzeyee/Tylendar/main/output/tylendar.bin"
 
 // Timezone offset from UTC in seconds. Singapore is UTC+8.
 #define TZ_OFFSET_SECONDS (8 * 3600)
 
-// Local time of the daily refresh. 00:20 leaves time for the GitHub
-// Action (00:05) to finish rendering the new day.
-#define WAKE_HOUR 0
-#define WAKE_MINUTE 20
+// Local times of the daily refreshes as minutes after midnight, in
+// ascending order: 00:20 (new day), 07:30 and 13:00 (calendar events
+// added during the morning).
+#define WAKE_TIMES {20, 7 * 60 + 30, 13 * 60}
 
 // How long to sleep before retrying after any failure, in minutes.
 #define RETRY_MINUTES 60

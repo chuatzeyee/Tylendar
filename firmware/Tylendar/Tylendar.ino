@@ -1,9 +1,9 @@
 // Tylendar: a daily Chinese almanac on a 10.2 inch four color e-paper.
 //
-// Every night the ESP32 wakes from deep sleep, joins WiFi, downloads
-// the image that GitHub Actions rendered for the new day, pushes it to
-// the panel, puts the panel into deep sleep, and goes back to sleep
-// until the next midnight.
+// The ESP32 wakes from deep sleep at each time in WAKE_TIMES, joins
+// WiFi, downloads the image that GitHub Actions rendered minutes
+// earlier, pushes it to the panel, puts the panel into deep sleep, and
+// goes back to sleep until the next scheduled wake.
 //
 // Board: Good Display ESP32-L with DESPI-C02 adapter.
 // Panel: GDEM102F91, 960x640, black white yellow red.
@@ -55,7 +55,7 @@ static bool syncClock() {
 
 // Streams the image straight from the HTTP socket to the panel, so no
 // frame buffer is needed. Returns false without refreshing if anything
-// goes wrong, which leaves the previous day visible instead of garbage.
+// goes wrong, which leaves the previous image visible instead of garbage.
 static bool fetchAndDisplay() {
   WiFiClientSecure client;
   client.setInsecure(); // public calendar data, integrity checked by size
@@ -118,18 +118,26 @@ static bool fetchAndDisplay() {
   return ok;
 }
 
-// Seconds until the next WAKE_HOUR:WAKE_MINUTE local time.
+static const int WAKE_MINUTES_OF_DAY[] = WAKE_TIMES;
+static const size_t WAKE_COUNT =
+    sizeof(WAKE_MINUTES_OF_DAY) / sizeof(WAKE_MINUTES_OF_DAY[0]);
+
+// Seconds until the next WAKE_TIMES entry, local time. The extra loop
+// pass wraps to tomorrow's first wake once today's have all passed.
 static uint64_t secondsToNextWake() {
   time_t now = time(nullptr);
   struct tm tm_now;
   localtime_r(&now, &tm_now);
-  struct tm tm_wake = tm_now;
-  tm_wake.tm_hour = WAKE_HOUR;
-  tm_wake.tm_min = WAKE_MINUTE;
-  tm_wake.tm_sec = 0;
-  time_t wake = mktime(&tm_wake);
-  if (wake <= now) wake += 24 * 3600;
-  return (uint64_t)(wake - now);
+  for (size_t i = 0; i <= WAKE_COUNT; i++) {
+    struct tm tm_wake = tm_now;
+    int m = WAKE_MINUTES_OF_DAY[i % WAKE_COUNT];
+    tm_wake.tm_hour = m / 60;
+    tm_wake.tm_min = m % 60;
+    tm_wake.tm_sec = 0;
+    time_t wake = mktime(&tm_wake) + (i == WAKE_COUNT ? 24 * 3600 : 0);
+    if (wake > now) return (uint64_t)(wake - now);
+  }
+  return 24 * 3600ULL;
 }
 
 static void sleepFor(uint64_t seconds, const char *why) {
@@ -153,7 +161,7 @@ void setup() {
 
   if (!displayed) sleepFor(RETRY_MINUTES * 60ULL, "fetch or display failed");
   if (!haveTime) sleepFor(24 * 3600ULL, "no clock, blind daily cycle");
-  sleepFor(secondsToNextWake(), "until next midnight refresh");
+  sleepFor(secondsToNextWake(), "until next scheduled refresh");
 }
 
 void loop() {}

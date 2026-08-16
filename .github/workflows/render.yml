@@ -2,8 +2,11 @@ name: Render daily calendar
 
 on:
   schedule:
-    # 16:05 UTC is 00:05 Singapore time
+    # Each render runs 15 to 25 minutes before an ESP32 wake at 00:20,
+    # 07:30 and 13:00 Singapore time. Cron is UTC, Singapore is UTC+8.
     - cron: "5 16 * * *"
+    - cron: "5 23 * * *"
+    - cron: "35 4 * * *"
   workflow_dispatch:
   push:
     branches: [main]
