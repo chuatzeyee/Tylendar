@@ -59,12 +59,12 @@ docs/        Flashing guide for macOS, hardware assembly guide
    gh secret set ICS_URL
    ```
 
-   Each render then replaces the two small almanac lines (zodiac clash
-   and nayin) with the day's first two events. Days with no events fall
-   back to the almanac lines. The secret address stays in GitHub
-   Actions; nothing from your calendar is committed except the rendered
-   pixels. Events added during the day appear at the next refresh, so
-   by 07:30 or 13:00 at the latest.
+   Each render then replaces the yi ji almanac rows with the day's
+   first two events, laid out as a table of time, title, and venue with
+   a map pin. Days with no events keep the almanac rows. The secret
+   address stays in GitHub Actions; nothing from your calendar is
+   committed except the rendered pixels. Events added during the day
+   appear at the next refresh, so by 07:30 or 13:00 at the latest.
 
 ## Renderer
 

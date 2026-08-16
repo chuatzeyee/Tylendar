@@ -206,10 +206,10 @@ def event_time(dt):
 
 
 def calendar_events(d):
-    """The day's first two events from the ICS feed named by the ICS_URL
-    environment variable (a URL or a local file path), or None. Any
-    failure falls back to the almanac lines; a broken calendar fetch
-    must never cost the day's render."""
+    """The day's first two events as (time, title, venue) tuples from
+    the ICS feed named by the ICS_URL environment variable (a URL or a
+    local file path), or None. Any failure falls back to the almanac
+    rows; a broken calendar fetch must never cost the day's render."""
     url = os.environ.get("ICS_URL", "").strip()
     if not url:
         return None
@@ -230,14 +230,15 @@ def calendar_events(d):
             title = str(ev.get("SUMMARY", "")).strip()
             if not title:
                 continue
+            venue = str(ev.get("LOCATION", "")).strip()
             start = ev["DTSTART"].dt
             if isinstance(start, datetime):
                 start = start.astimezone(tz)
-                found.append((1, start, event_time(start) + " " + title))
+                found.append((1, start, (event_time(start), title, venue)))
             else:
-                found.append((0, day_start, title))
+                found.append((0, day_start, ("", title, venue)))
         found.sort(key=lambda e: (e[0], e[1]))
-        return [line for _, _, line in found[:2]] or None
+        return [row for _, _, row in found[:2]] or None
     except Exception as e:
         print(f"calendar fetch failed, using almanac lines: {e}", file=sys.stderr)
         return None
@@ -314,18 +315,49 @@ def render(d):
     elif hl["jieqi_line"]:
         draw_text(img, (left, 807), hl["jieqi_line"], serif(24, 400), BLACK, anchor="lm", tracking=3)
 
-    # Yi and Ji rows left; calendar events right when an ICS feed is
-    # configured, the chong sha and nayin lines otherwise
+    # Bottom block: the day's calendar events as a three column table
+    # (time, title, venue with a map pin) when the ICS feed has events
+    # today, the yi ji almanac rows otherwise. No rules between the
+    # columns, alignment does the work.
+    def fit(s, f, maxw):
+        if text_width(s, f) <= maxw:
+            return s
+        while s and text_width(s + "..", f) > maxw:
+            s = s[:-1]
+        return s.rstrip() + ".."
+
     events = calendar_events(d)
-    asides = events or [f"{hl['chong']}  {hl['sha']}", hl["nayin"]]
-    asides += [""] * (2 - len(asides))
+    if events:
+        # Latin set in the Latin face, CJK in the serif, on a shared
+        # baseline. 22px CJK minimum: dense glyphs clog any smaller.
+        f_when = DuoFont(latin(22, 700), serif(23, 500), LATIN_COVER)
+        f_title = DuoFont(latin(22, 400), serif(23, 400), LATIN_COVER)
+        f_venue = DuoFont(latin(19, 400), serif(22, 400), LATIN_COVER)
+        title_x = left + 96
+        for i, (when, title, venue) in enumerate(events):
+            base = 880 + i * 52
+            if when:
+                draw_text(img, (left, base), when, f_when, BLACK, anchor="ls")
+            venue = fit(venue, f_venue, 170) if venue else ""
+            venue_w = text_width(venue, f_venue)
+            title_max = right - title_x - (venue_w + 34 if venue else 0)
+            draw_text(img, (title_x, base), fit(title, f_title, title_max),
+                      f_title, BLACK, anchor="ls")
+            if venue:
+                draw_text(img, (right, base), venue, f_venue, BLACK, anchor="rs")
+                px = right - venue_w - 16
+                cy = base - 11
+                draw.ellipse([px - 6, cy - 6, px + 6, cy + 6], fill=BLACK)
+                draw.polygon([(px - 5, cy + 3), (px + 5, cy + 3), (px, base)], fill=BLACK)
+                draw.ellipse([px - 2, cy - 2, px + 2, cy + 2], fill=WHITE)
+        return img
+
     f_chip = sans_sc(21, 700)
     f_items = serif(23, 400)
-    # Latin (event times and English titles) set in the Latin face,
-    # CJK in the serif; drawn on a shared baseline so mixing works.
     # 22px minimum: dense nayin glyphs (the rain radical pair) clog
     # into blobs any smaller.
     f_aside = DuoFont(latin(20, 500), serif(22, 400), LATIN_COVER)
+    asides = [f"{hl['chong']}  {hl['sha']}", hl["nayin"]]
     rows = [("宜", hl["yi"], RED, asides[0]), ("忌", hl["ji"], BLACK, asides[1])]
     chip = 32
 
@@ -342,13 +374,8 @@ def render(d):
             items = items[:-1]
         line = "  ".join(items)
         draw_text(img, (left + chip + 18, ry + chip / 2 + 1), line, f_items, BLACK, anchor="lm")
-        avail = aside_room(line)
-        if aside and text_width(aside, f_aside) > avail:
-            while aside and text_width(aside + "..", f_aside) > avail:
-                aside = aside[:-1]
-            aside = aside.rstrip() + ".." if aside else ""
-        if aside:
-            draw_text(img, (right, ry + chip / 2 + 7), aside, f_aside, BLACK, anchor="rs")
+        aside = fit(aside, f_aside, aside_room(line))
+        draw_text(img, (right, ry + chip / 2 + 7), aside, f_aside, BLACK, anchor="rs")
     return img
 
 
