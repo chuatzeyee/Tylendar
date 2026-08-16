@@ -9,15 +9,20 @@ pillars, zodiac year, solar terms, festivals, and the daily yi and ji.
 
 ## How it works
 
-1. A GitHub Action in this repo runs three times a day, at 00:05, 07:05,
-   and 12:35 Singapore time. It renders the page with Python and Pillow,
-   quantizes it to the four panel colors, and commits `output/tylendar.bin`
-   (153600 bytes, 2 bits per pixel) plus a `preview.png`.
-2. An ESP32 behind the frame wakes from deep sleep at 00:20, 07:30, and
-   13:00, joins WiFi, downloads the binary, and streams it straight to
-   the panel. No frame buffer, no server, nothing to host.
+1. A GitHub Action in this repo runs four times a day, at 00:05, 07:05,
+   12:35, and 18:35 Singapore time. It renders the page with Python and
+   Pillow, quantizes it to the four panel colors, and commits
+   `output/tylendar.bin` (153600 bytes, 2 bits per pixel) plus a
+   `preview.png`.
+2. An ESP32 behind the frame wakes from deep sleep at 00:20, 07:30,
+   13:00, and 19:00, joins WiFi, downloads the binary, and streams it
+   straight to the panel. No frame buffer, no server, nothing to host.
 3. The panel refreshes for about 20 seconds, then both the panel and the
    ESP32 go back to deep sleep until the next scheduled wake.
+
+The 18:35 render is the dark one: from 19:00 the page shows white ink on
+a black background on weekdays, and on a red background on weekends. The
+midnight refresh returns to the light page for the new day.
 
 ## Hardware
 
@@ -33,7 +38,7 @@ pillars, zodiac year, solar terms, festivals, and the daily yi and ji.
 ```
 generator/   Python renderer, fonts, run: python3 generator/generate.py
 firmware/    Arduino sketch for the ESP32-L, panel driver included
-output/      Rendered binary and preview, updated three times a day
+output/      Rendered binary and preview, updated four times a day
 docs/        Flashing guide for macOS, hardware assembly guide
 ```
 
@@ -65,7 +70,29 @@ docs/        Flashing guide for macOS, hardware assembly guide
    a map pin. Days with no events keep the almanac rows. The secret
    address stays in GitHub Actions; nothing from your calendar is
    committed except the rendered pixels. Events added during the day
-   appear at the next refresh, so by 07:30 or 13:00 at the latest.
+   appear at the next refresh, so by 07:30, 13:00, or 19:00 at the
+   latest.
+
+## Changing settings from a phone
+
+The repo doubles as the control panel: github.com is the portal, and
+your GitHub login (with 2FA) is the username and password in front of
+it. The board picks up any change at its next wake, or immediately if
+you press the EN button on the back of the frame.
+
+- Edit settings: open
+  [generator/settings.json](generator/settings.json) on github.com, tap
+  the pencil, change a value, commit. The commit triggers a re-render
+  automatically, done in about two minutes.
+  - `"hotspot"`: the label next to the WiFi icon at the top of the page.
+    Keep it to plain ASCII, the bundled Latin font has no CJK glyphs.
+  - `"mode"`: `"auto"` (light by day, dark from 19:00), or pin it with
+    `"dark"` or `"light"` until you change it back.
+- Force a refresh now: repo Actions tab, "Render daily calendar", "Run
+  workflow". The mode dropdown there forces light or dark for that one
+  render only; scheduled renders go back to following settings.json.
+- Change the calendar feed: repo Settings, "Secrets and variables",
+  "Actions", update `ICS_URL`, then run the workflow once.
 
 ## Renderer
 

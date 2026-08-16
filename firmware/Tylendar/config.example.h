@@ -18,9 +18,9 @@
 #define TZ_OFFSET_SECONDS (8 * 3600)
 
 // Local times of the daily refreshes as minutes after midnight, in
-// ascending order: 00:20 (new day), 07:30 and 13:00 (calendar events
-// added during the morning).
-#define WAKE_TIMES {20, 7 * 60 + 30, 13 * 60}
+// ascending order: 00:20 (new day, back to light), 07:30 and 13:00
+// (calendar events added during the morning), 19:00 (dark mode).
+#define WAKE_TIMES {20, 7 * 60 + 30, 13 * 60, 19 * 60}
 
 // How long to sleep before retrying after any failure, in minutes.
 #define RETRY_MINUTES 60

@@ -11,6 +11,7 @@ Outputs:
                        00 black, 01 white, 10 yellow, 11 red
 """
 
+import json
 import os
 import sys
 import urllib.request
@@ -40,7 +41,30 @@ OUT = ROOT.parent / "output"
 
 W, H = 640, 960
 MARGIN = 52
-HOTSPOT = "TyBatan"
+
+
+def load_settings():
+    """Editable knobs, changed from any browser at
+    github.com/chuatzeyee/Tylendar/edit/main/generator/settings.json.
+    A bad edit must never kill the scheduled render, so any problem
+    falls back to defaults with a warning."""
+    try:
+        parsed = json.loads((ROOT / "settings.json").read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {}
+    # ValueError covers both bad JSON and non UTF-8 bytes.
+    except (ValueError, OSError) as e:
+        print(f"warning: settings.json ignored ({e})", file=sys.stderr)
+        return {}
+    if not isinstance(parsed, dict):
+        print(f"warning: settings.json ignored (expected an object, got "
+              f"{type(parsed).__name__})", file=sys.stderr)
+        return {}
+    return parsed
+
+
+SETTINGS = load_settings()
+HOTSPOT = str(SETTINGS.get("hotspot") or "").strip() or "TyBatan"
 
 BLACK = (12, 12, 12)
 WHITE = (255, 255, 255)
@@ -253,32 +277,48 @@ def cn_number(n):
     return CN_NUM[n // 10 - 1] + "十" + (CN_NUM[n % 10 - 1] if n % 10 else "")
 
 
-def render(d):
-    img = Image.new("RGB", (W, H), WHITE)
-    draw = ImageDraw.Draw(img)
+def render(d, dark=False):
     hl = huangli(d)
-    accent = RED if (hl["is_sunday"] or hl["festivals"] or hl["jieqi_today"]) else BLACK
+    special = hl["is_sunday"] or hl["festivals"] or hl["jieqi_today"]
+    weekend = d.weekday() >= 5
+    # Dark theme: black page on weekdays, red page on weekends, white
+    # ink. Accents shift to stay legible: yellow on black, plain white
+    # on red, and red fields invert to white fields with red text.
+    if dark and weekend:
+        bg, ink, accent = RED, WHITE, WHITE
+        seal_bg, seal_fg = WHITE, RED
+        yi_chip, ji_chip = (WHITE, RED), (BLACK, WHITE)
+    elif dark:
+        bg, ink, accent = BLACK, WHITE, (YELLOW if special else WHITE)
+        seal_bg, seal_fg = RED, WHITE
+        yi_chip, ji_chip = (RED, WHITE), (WHITE, BLACK)
+    else:
+        bg, ink, accent = WHITE, BLACK, (RED if special else BLACK)
+        seal_bg, seal_fg = RED, WHITE
+        yi_chip, ji_chip = (RED, WHITE), (BLACK, WHITE)
+    img = Image.new("RGB", (W, H), bg)
+    draw = ImageDraw.Draw(img)
     left, right = 120, W - 40
 
     # Hotspot label, top right corner above the seal. 16px at low
     # optical size: high contrast Fraunces hairlines drop out of the
     # threshold mask any smaller.
     f_spot = latin(16, 600, opsz=9)
-    draw_text(img, (right, 38), HOTSPOT, f_spot, BLACK, anchor="rs")
+    draw_text(img, (right, 38), HOTSPOT, f_spot, ink, anchor="rs")
     cx, cy = right - text_width(HOTSPOT, f_spot) - 18, 36
     for r in (9, 5):
-        draw.arc([cx - r, cy - r, cx + r, cy + r], 225, 315, fill=BLACK, width=2)
-    draw.ellipse([cx - 2, cy - 2, cx + 2, cy + 2], fill=BLACK)
+        draw.arc([cx - r, cy - r, cx + r, cy + r], 225, 315, fill=ink, width=2)
+    draw.ellipse([cx - 2, cy - 2, cx + 2, cy + 2], fill=ink)
 
     # Header: Aug 2026 left, horizontal ganzhi seal right
-    draw_text(img, (left, 78), f"{hl['month_abbr']} {hl['year']}", latin(48, 800), BLACK, anchor="lm")
+    draw_text(img, (left, 78), f"{hl['month_abbr']} {hl['year']}", latin(48, 800), ink, anchor="lm")
     sw, sh = 88, 40
-    draw.rectangle([right - sw, 50, right, 50 + sh], fill=RED)
-    draw_text(img, (right - sw / 2, 50 + sh / 2 + 1), hl["ganzhi_year"], serif(26, 600), WHITE,
+    draw.rectangle([right - sw, 50, right, 50 + sh], fill=seal_bg)
+    draw_text(img, (right - sw / 2, 50 + sh / 2 + 1), hl["ganzhi_year"], serif(26, 600), seal_fg,
               anchor="mm", tracking=6)
 
     # Hairline under header
-    draw.rectangle([left, 118, right, 119], fill=BLACK)
+    draw.rectangle([left, 118, right, 119], fill=ink)
 
     # The day: huge, flush left
     # Flush the numeral ink, not the pen position, to the left margin.
@@ -297,25 +337,25 @@ def render(d):
     img.paste(accent, (left - bb[0], 0), mask)
 
     # Hairline above the weekday row
-    draw.rectangle([left, 552, right, 553], fill=BLACK)
+    draw.rectangle([left, 552, right, 553], fill=ink)
 
     # Weekday band: English left in accent color, Chinese right,
     # enclosed by hairlines above and below
     draw_text(img, (left, 586), hl["weekday_en"], latin(46, 800), accent, anchor="lm")
-    draw_text(img, (right, 586), hl["weekday_cn"], serif(28, 500), BLACK, anchor="rm", tracking=8)
-    draw.rectangle([left, 630, right, 631], fill=BLACK)
+    draw_text(img, (right, 586), hl["weekday_cn"], serif(28, 500), ink, anchor="rm", tracking=8)
+    draw.rectangle([left, 630, right, 631], fill=ink)
 
     # Lunar date and ganzhi pillars
-    draw_text(img, (left, 690), hl["lunar_md"], serif(58, 600), BLACK, anchor="lm", tracking=6)
+    draw_text(img, (left, 690), hl["lunar_md"], serif(58, 600), ink, anchor="lm", tracking=6)
     sub = f"{hl['ganzhi_year']}{hl['zodiac']}年  {hl['ganzhi_month']}月  {hl['ganzhi_day']}日"
-    draw_text(img, (left, 758), sub, serif(25, 400), BLACK, anchor="lm", tracking=2)
+    draw_text(img, (left, 758), sub, serif(25, 400), ink, anchor="lm", tracking=2)
 
     # Festival (red tag) or solar term (yellow tag) or day count line
     line3, tag_bg, tag_fg = None, YELLOW, BLACK
     if hl["jieqi_today"]:
         line3 = hl["jieqi_today"]
     if hl["festivals"]:
-        line3, tag_bg, tag_fg = hl["festivals"][0], RED, WHITE
+        line3, tag_bg, tag_fg = hl["festivals"][0], seal_bg, seal_fg
     if line3:
         f_tag = serif(24, 600)
         tw = text_width(line3, f_tag, tracking=4)
@@ -324,7 +364,7 @@ def render(d):
         draw.rectangle([left, y0, left + tw + 2 * pad, y1], fill=tag_bg)
         draw_text(img, (left + pad, (y0 + y1) / 2 + 1), line3, f_tag, tag_fg, anchor="lm", tracking=4)
     elif hl["jieqi_line"]:
-        draw_text(img, (left, 807), hl["jieqi_line"], serif(24, 400), BLACK, anchor="lm", tracking=3)
+        draw_text(img, (left, 807), hl["jieqi_line"], serif(24, 400), ink, anchor="lm", tracking=3)
 
     # Bottom block: the day's calendar events as a three column table
     # (time, title, venue with a map pin) when the ICS feed has events
@@ -346,25 +386,25 @@ def render(d):
         f_venue = DuoFont(latin(19, 400), serif(22, 400), LATIN_COVER)
         title_x = left + 96
         # Hairline separating the almanac block from the events table
-        draw.rectangle([left, 862, right, 863], fill=BLACK)
+        draw.rectangle([left, 862, right, 863], fill=ink)
         # Bottom anchored: tighter leading closes the gap upward so the
         # last baseline keeps the 942 ink bound.
         for i, (when, title, venue) in enumerate(events):
             base = 892 + i * 40
             if when:
-                draw_text(img, (left, base), when, f_when, BLACK, anchor="ls")
+                draw_text(img, (left, base), when, f_when, ink, anchor="ls")
             venue = fit(venue, f_venue, 170) if venue else ""
             venue_w = text_width(venue, f_venue)
             title_max = right - title_x - (venue_w + 34 if venue else 0)
             draw_text(img, (title_x, base), fit(title, f_title, title_max),
-                      f_title, BLACK, anchor="ls")
+                      f_title, ink, anchor="ls")
             if venue:
-                draw_text(img, (right, base), venue, f_venue, BLACK, anchor="rs")
+                draw_text(img, (right, base), venue, f_venue, ink, anchor="rs")
                 px = right - venue_w - 16
                 cy = base - 11
-                draw.ellipse([px - 6, cy - 6, px + 6, cy + 6], fill=BLACK)
-                draw.polygon([(px - 5, cy + 3), (px + 5, cy + 3), (px, base)], fill=BLACK)
-                draw.ellipse([px - 2, cy - 2, px + 2, cy + 2], fill=WHITE)
+                draw.ellipse([px - 6, cy - 6, px + 6, cy + 6], fill=ink)
+                draw.polygon([(px - 5, cy + 3), (px + 5, cy + 3), (px, base)], fill=ink)
+                draw.ellipse([px - 2, cy - 2, px + 2, cy + 2], fill=bg)
         return img
 
     f_chip = sans_sc(21, 700)
@@ -373,24 +413,24 @@ def render(d):
     # into blobs any smaller.
     f_aside = DuoFont(latin(20, 500), serif(22, 400), LATIN_COVER)
     asides = [f"{hl['chong']}  {hl['sha']}", hl["nayin"]]
-    rows = [("宜", hl["yi"], RED, asides[0]), ("忌", hl["ji"], BLACK, asides[1])]
+    rows = [("宜", hl["yi"], yi_chip, asides[0]), ("忌", hl["ji"], ji_chip, asides[1])]
     chip = 32
 
     def aside_room(items_line):
         return right - (left + chip + 18 + text_width(items_line, f_items)) - 24
 
-    for i, (label, items, color, aside) in enumerate(rows):
+    for i, (label, items, (chip_bg, chip_fg), aside) in enumerate(rows):
         ry = 856 + i * 52
-        draw.rectangle([left, ry, left + chip, ry + chip], fill=color)
-        draw_text(img, (left + chip / 2, ry + chip / 2 + 1), label, f_chip, WHITE, anchor="mm")
+        draw.rectangle([left, ry, left + chip, ry + chip], fill=chip_bg)
+        draw_text(img, (left + chip / 2, ry + chip / 2 + 1), label, f_chip, chip_fg, anchor="mm")
         # The aside outranks the almanac list: shed yi ji items, never
         # below two, before resorting to truncating the aside.
         while aside and len(items) > 2 and text_width(aside, f_aside) > aside_room("  ".join(items)):
             items = items[:-1]
         line = "  ".join(items)
-        draw_text(img, (left + chip + 18, ry + chip / 2 + 1), line, f_items, BLACK, anchor="lm")
+        draw_text(img, (left + chip + 18, ry + chip / 2 + 1), line, f_items, ink, anchor="lm")
         aside = fit(aside, f_aside, aside_room(line))
-        draw_text(img, (right, ry + chip / 2 + 7), aside, f_aside, BLACK, anchor="rs")
+        draw_text(img, (right, ry + chip / 2 + 7), aside, f_aside, ink, anchor="rs")
     return img
 
 
@@ -414,15 +454,26 @@ def pack(img):
 
 
 def main():
-    if len(sys.argv) > 1:
-        d = date.fromisoformat(sys.argv[1])
+    now = datetime.now(ZoneInfo(TIMEZONE))
+    d = date.fromisoformat(sys.argv[1]) if len(sys.argv) > 1 else now.date()
+    # The evening render (18:35 SGT cron) goes dark until the midnight
+    # render flips it back. Overrides, strongest first: DARK=1/DARK=0
+    # (one shot, set by the Run workflow button or locally), then
+    # "mode": "dark"/"light" in settings.json (persistent), then clock.
+    forced = os.environ.get("DARK", "").strip()
+    mode_setting = str(SETTINGS.get("mode", "")).strip().lower()
+    if forced:
+        dark = forced == "1"
+    elif mode_setting in ("dark", "light"):
+        dark = mode_setting == "dark"
     else:
-        d = datetime.now(ZoneInfo(TIMEZONE)).date()
-    img = render(d)
+        dark = now.hour >= 18
+    img = render(d, dark)
     OUT.mkdir(exist_ok=True)
     img.save(OUT / "preview.png")
     (OUT / "tylendar.bin").write_bytes(pack(img))
-    print(f"rendered {d} -> {OUT / 'tylendar.bin'} ({(OUT / 'tylendar.bin').stat().st_size} bytes)")
+    mode = "dark" if dark else "light"
+    print(f"rendered {d} ({mode}) -> {OUT / 'tylendar.bin'} ({(OUT / 'tylendar.bin').stat().st_size} bytes)")
 
 
 if __name__ == "__main__":

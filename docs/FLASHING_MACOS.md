@@ -136,7 +136,8 @@ nothing else (a serial monitor, another IDE window) has the port open.
 3. You should see the sketch log its progress: joining WiFi, syncing
    time over NTP, downloading the image, then either driving the panel
    (if connected) or reporting a display failure, and finally the deep
-   sleep time until the next scheduled wake (00:20, 07:30, or 13:00).
+   sleep time until the next scheduled wake (00:20, 07:30, 13:00, or
+   19:00).
 
 If the panel is not connected yet, a display init failure at this stage
 is expected and harmless. The important part is that WiFi joins and the
@@ -144,7 +145,7 @@ download reports 153600 bytes.
 
 ## Step 7: Reflashing later
 
-The board wakes for under a minute at a time, three times a day, and
+The board wakes for under a minute at a time, four times a day, and
 spends the rest in deep sleep, where the USB serial port still enumerates but the chip will not
 respond to auto reset reliably. To reflash a sleeping board, use the
 BOOT button method from step 5, it works in any state.

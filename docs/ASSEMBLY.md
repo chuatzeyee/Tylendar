@@ -107,9 +107,10 @@ the 214 mm dimension vertical.
 
 ## Daily operation
 
-The board wakes at 00:20, 07:30, and 13:00 Singapore time, pulls the
-fresh image, spends about 20 seconds refreshing, and sleeps until the
-next wake. If WiFi or the download fails it keeps the previous image
+The board wakes at 00:20, 07:30, 13:00, and 19:00 Singapore time, pulls
+the fresh image, spends about 20 seconds refreshing, and sleeps until
+the next wake. The 19:00 refresh switches to the dark page (black on
+weekdays, red on weekends); midnight switches back to light. If WiFi or the download fails it keeps the previous image
 visible and retries hourly. No buttons, no maintenance. If the frame
 moves somewhere new, add that network to the WIFI_NETWORKS list in
 `config.h` and reflash once.
