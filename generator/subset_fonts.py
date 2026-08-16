@@ -7,8 +7,12 @@ in generate.py, then subsets the fonts to exactly that set. Rerun only
 when lunar_python is upgraded or new literal text is added to the
 renderer.
 
+The universe includes the traditional forms produced by the OpenCC s2t
+and s2hk tables, since the renderer converts everything to traditional
+Chinese at run time.
+
 Usage:
-    pip install fonttools lunar_python==1.4.8
+    pip install fonttools opencc-python-reimplemented lunar_python==1.4.8
     python3 subset_fonts.py /path/to/ChironSungHKVF.ttf /path/to/NotoSansSC.ttf
 
 Sources:
@@ -26,12 +30,17 @@ HERE = Path(__file__).resolve().parent
 
 
 def cjk_universe():
+    from opencc import OpenCC
+
+    converters = [OpenCC("s2t"), OpenCC("s2hk")]
     chars = set()
     pkg = Path(lunar_python.__file__).parent
     for src in list(pkg.rglob("*.py")) + [HERE / "generate.py"]:
-        for ch in src.read_text(encoding="utf-8"):
-            if ord(ch) >= 0x2E80:
-                chars.add(ch)
+        raw = src.read_text(encoding="utf-8")
+        for text in [raw] + [cc.convert(raw) for cc in converters]:
+            for ch in text:
+                if ord(ch) >= 0x2E80:
+                    chars.add(ch)
     return chars
 
 

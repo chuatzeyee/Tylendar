@@ -18,6 +18,20 @@ from zoneinfo import ZoneInfo
 
 from PIL import Image, ImageDraw, ImageFont
 from lunar_python import Solar
+from opencc import OpenCC
+
+# lunar_python emits simplified Chinese; the calendar renders in
+# traditional with Hong Kong conventions. The zodiac clash character is
+# fixed up because almanacs write it 沖, not OpenCC's standalone 衝.
+CC = OpenCC("s2hk")
+
+
+def to_traditional(value):
+    if isinstance(value, str):
+        return CC.convert(value).replace("衝", "沖")
+    if isinstance(value, list):
+        return [to_traditional(v) for v in value]
+    return value
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT.parent / "output"
@@ -147,7 +161,7 @@ def huangli(d):
     jq_today = prev_jq.getSolar().toYmd() == d.isoformat()
     days_into = (d - date.fromisoformat(prev_jq.getSolar().toYmd())).days
     festivals = list(lunar.getFestivals()) + list(solar.getFestivals())
-    return {
+    data = {
         "solar": solar,
         "day": d.day,
         "month_en": MONTH_EN[d.month - 1],
@@ -171,6 +185,7 @@ def huangli(d):
         "nayin": lunar.getDayNaYin(),
         "festivals": festivals,
     }
+    return {k: to_traditional(v) for k, v in data.items()}
 
 
 def cn_number(n):
