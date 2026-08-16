@@ -327,14 +327,22 @@ def render(d):
     # into blobs any smaller.
     f_aside = DuoFont(latin(20, 500), serif(22, 400), LATIN_COVER)
     rows = [("宜", hl["yi"], RED, asides[0]), ("忌", hl["ji"], BLACK, asides[1])]
+    chip = 32
+
+    def aside_room(items_line):
+        return right - (left + chip + 18 + text_width(items_line, f_items)) - 24
+
     for i, (label, items, color, aside) in enumerate(rows):
         ry = 856 + i * 52
-        chip = 32
         draw.rectangle([left, ry, left + chip, ry + chip], fill=color)
         draw_text(img, (left + chip / 2, ry + chip / 2 + 1), label, f_chip, WHITE, anchor="mm")
+        # The aside outranks the almanac list: shed yi ji items, never
+        # below two, before resorting to truncating the aside.
+        while aside and len(items) > 2 and text_width(aside, f_aside) > aside_room("  ".join(items)):
+            items = items[:-1]
         line = "  ".join(items)
         draw_text(img, (left + chip + 18, ry + chip / 2 + 1), line, f_items, BLACK, anchor="lm")
-        avail = right - (left + chip + 18 + text_width(line, f_items)) - 24
+        avail = aside_room(line)
         if aside and text_width(aside, f_aside) > avail:
             while aside and text_width(aside + "..", f_aside) > avail:
                 aside = aside[:-1]
