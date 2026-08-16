@@ -66,16 +66,22 @@ Always use the `cu.` entry, not the `tty.` entry with the same name.
    `firmware/Tylendar/Tylendar.ino` from this repo. The IDE opens the
    whole folder including the driver files, you will see tabs for
    `config.h`, `epd_gdem102f91.h`, and `epd_gdem102f91.cpp`.
-2. Click the `config.h` tab and fill in your values:
+2. Click the `config.h` tab and fill in the WiFi list. The board tries
+   each network in order at every wake, so list every place the frame
+   lives; delete the second line if there is only one:
 
    ```
-   #define WIFI_SSID       "YOUR_WIFI_SSID"
-   #define WIFI_PASSWORD   "YOUR_WIFI_PASSWORD"
+   #define WIFI_NETWORKS \
+     { \
+       {"YOUR_HOME_SSID", "YOUR_HOME_PASSWORD"}, \
+       {"YOUR_WORK_SSID", "YOUR_WORK_PASSWORD"}, \
+     }
    ```
 
    The ESP32 only supports 2.4 GHz WiFi. If your router runs a combined
    2.4/5 GHz network with one name, that is fine, the ESP32 will find
-   the 2.4 GHz side.
+   the 2.4 GHz side. Corporate login networks (802.1X) and captive
+   portals will not work; ask for the guest or IoT network instead.
 3. If you forked the repo, also change `IMAGE_URL` to point at your
    fork. If you are using chuatzeyee/Tylendar directly, leave it.
 

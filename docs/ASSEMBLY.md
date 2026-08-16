@@ -110,8 +110,9 @@ the 214 mm dimension vertical.
 The board wakes at 00:20, 07:30, and 13:00 Singapore time, pulls the
 fresh image, spends about 20 seconds refreshing, and sleeps until the
 next wake. If WiFi or the download fails it keeps the previous image
-visible and retries hourly. No buttons, no maintenance. If you move
-house, reflash with the new WiFi credentials.
+visible and retries hourly. No buttons, no maintenance. If the frame
+moves somewhere new, add that network to the WIFI_NETWORKS list in
+`config.h` and reflash once.
 
 Four color e-paper prefers moderate temperatures and no direct sun.
 Direct sunlight fades the film over time and heat slows refreshes, so

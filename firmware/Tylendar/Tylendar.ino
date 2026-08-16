@@ -21,20 +21,36 @@ static const uint32_t HTTP_TIMEOUT_MS = 30000;
 static const size_t CHUNK_SIZE = 4096;
 static uint8_t chunk[CHUNK_SIZE];
 
+struct WifiNetwork {
+  const char *ssid;
+  const char *password;
+};
+static const WifiNetwork WIFI_LIST[] = WIFI_NETWORKS;
+static const size_t WIFI_LIST_COUNT = sizeof(WIFI_LIST) / sizeof(WIFI_LIST[0]);
+
 static bool connectWifi() {
-  Serial.printf("WiFi: connecting to %s\n", WIFI_SSID);
   WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  uint32_t start = millis();
-  while (WiFi.status() != WL_CONNECTED) {
-    if (millis() - start > WIFI_TIMEOUT_MS) {
-      Serial.println("WiFi: timed out");
-      return false;
+  for (size_t i = 0; i < WIFI_LIST_COUNT; i++) {
+    Serial.printf("WiFi: connecting to %s\n", WIFI_LIST[i].ssid);
+    WiFi.begin(WIFI_LIST[i].ssid, WIFI_LIST[i].password);
+    uint32_t start = millis();
+    while (millis() - start <= WIFI_TIMEOUT_MS) {
+      wl_status_t st = WiFi.status();
+      if (st == WL_CONNECTED) {
+        Serial.printf("WiFi: connected, ip %s\n", WiFi.localIP().toString().c_str());
+        return true;
+      }
+      // Absent SSID fails in seconds, no need to burn the full timeout
+      // before trying the next network on the list.
+      if (st == WL_NO_SSID_AVAIL || st == WL_CONNECT_FAILED) break;
+      delay(250);
     }
-    delay(250);
+    Serial.println("WiFi: not this one");
+    WiFi.disconnect(true);
+    delay(100);
   }
-  Serial.printf("WiFi: connected, ip %s\n", WiFi.localIP().toString().c_str());
-  return true;
+  Serial.println("WiFi: no listed network reachable");
+  return false;
 }
 
 static bool syncClock() {

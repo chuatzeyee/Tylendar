@@ -1,8 +1,14 @@
 #pragma once
 
-// WiFi credentials
-#define WIFI_SSID "YOUR_WIFI_SSID"
-#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+// WiFi networks, tried in order at every wake, so the frame can move
+// between home and work without reflashing. One {ssid, password} pair
+// per line. 2.4GHz networks with an ordinary password only: corporate
+// login networks (802.1X) and captive portals will not work.
+#define WIFI_NETWORKS \
+  { \
+    {"YOUR_HOME_SSID", "YOUR_HOME_PASSWORD"}, \
+    {"YOUR_WORK_SSID", "YOUR_WORK_PASSWORD"}, \
+  }
 
 // Where the rendered image lives. GitHub Actions in this repo re-renders
 // it 15 to 25 minutes before each wake time below.
