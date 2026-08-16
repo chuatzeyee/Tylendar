@@ -79,12 +79,12 @@ docs/        Flashing guide for macOS, hardware assembly guide
 The portal at https://chuatzeyee.github.io/Tylendar/ shows the current
 page, the render status, and the next wake, and lets you change the
 page mode, the hotspot label, or force a render. It is a static page
-served by GitHub Pages (source in `portal/`): reading is open, but any
-change goes through the GitHub API with a fine grained personal access
-token that you create once (Contents and Actions, read and write, this
-repo only) and that never leaves your browser. The board picks up any
-change at its next wake, or immediately if you press the EN button on
-the back of the frame.
+served by GitHub Pages (source in `portal/`), locked behind a fine
+grained personal access token that you create once (Contents and
+Actions, read and write, this repo only): the page stays blank until
+GitHub confirms the token can write to this repo, and the token never
+leaves your browser. The board picks up any change at its next wake,
+or immediately if you press the EN button on the back of the frame.
 
 Everything the portal does can also be done on github.com directly,
 with your GitHub login (and 2FA) as the front door:
