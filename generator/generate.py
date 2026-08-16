@@ -40,6 +40,7 @@ OUT = ROOT.parent / "output"
 
 W, H = 640, 960
 MARGIN = 52
+HOTSPOT = "TyBatan"
 
 BLACK = (12, 12, 12)
 WHITE = (255, 255, 255)
@@ -259,6 +260,16 @@ def render(d):
     accent = RED if (hl["is_sunday"] or hl["festivals"] or hl["jieqi_today"]) else BLACK
     left, right = 120, W - 40
 
+    # Hotspot label, top right corner above the seal. 16px at low
+    # optical size: high contrast Fraunces hairlines drop out of the
+    # threshold mask any smaller.
+    f_spot = latin(16, 600, opsz=9)
+    draw_text(img, (right, 38), HOTSPOT, f_spot, BLACK, anchor="rs")
+    cx, cy = right - text_width(HOTSPOT, f_spot) - 18, 36
+    for r in (9, 5):
+        draw.arc([cx - r, cy - r, cx + r, cy + r], 225, 315, fill=BLACK, width=2)
+    draw.ellipse([cx - 2, cy - 2, cx + 2, cy + 2], fill=BLACK)
+
     # Header: Aug 2026 left, horizontal ganzhi seal right
     draw_text(img, (left, 78), f"{hl['month_abbr']} {hl['year']}", latin(48, 800), BLACK, anchor="lm")
     sw, sh = 88, 40
@@ -334,8 +345,10 @@ def render(d):
         f_title = DuoFont(latin(22, 400), serif(23, 400), LATIN_COVER)
         f_venue = DuoFont(latin(19, 400), serif(22, 400), LATIN_COVER)
         title_x = left + 96
+        # Bottom anchored: tighter leading closes the gap upward so the
+        # last baseline keeps the 942 ink bound.
         for i, (when, title, venue) in enumerate(events):
-            base = 880 + i * 52
+            base = 892 + i * 40
             if when:
                 draw_text(img, (left, base), when, f_when, BLACK, anchor="ls")
             venue = fit(venue, f_venue, 170) if venue else ""
