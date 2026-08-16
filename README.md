@@ -39,6 +39,7 @@ midnight refresh returns to the light page for the new day.
 generator/   Python renderer, fonts, run: python3 generator/generate.py
 firmware/    Arduino sketch for the ESP32-L, panel driver included
 output/      Rendered binary and preview, updated four times a day
+portal/      Settings portal, served at chuatzeyee.github.io/Tylendar
 docs/        Flashing guide for macOS, hardware assembly guide
 ```
 
@@ -75,10 +76,18 @@ docs/        Flashing guide for macOS, hardware assembly guide
 
 ## Changing settings from a phone
 
-The repo doubles as the control panel: github.com is the portal, and
-your GitHub login (with 2FA) is the username and password in front of
-it. The board picks up any change at its next wake, or immediately if
-you press the EN button on the back of the frame.
+The portal at https://chuatzeyee.github.io/Tylendar/ shows the current
+page, the render status, and the next wake, and lets you change the
+page mode, the hotspot label, or force a render. It is a static page
+served by GitHub Pages (source in `portal/`): reading is open, but any
+change goes through the GitHub API with a fine grained personal access
+token that you create once (Contents and Actions, read and write, this
+repo only) and that never leaves your browser. The board picks up any
+change at its next wake, or immediately if you press the EN button on
+the back of the frame.
+
+Everything the portal does can also be done on github.com directly,
+with your GitHub login (and 2FA) as the front door:
 
 - Edit settings: open
   [generator/settings.json](generator/settings.json) on github.com, tap
@@ -128,8 +137,16 @@ fails it leaves the previous image on screen and retries in an hour.
 Lunar calendar math by [lunar-python](https://github.com/6tail/lunar-python)
 (MIT), verified against the Hong Kong Observatory conversion tables.
 
-Fonts, all under the SIL Open Font License, bundled in
-`generator/fonts/`:
+The render prefers the licensed faces in `generator/fonts/licensed/`:
+MTR Sung (`mtr-sung.ttf`) for Chinese, with per character fallback for
+simplified forms it lacks, and Canela Web
+(`canelaweb-{thin,regular,medium,bold,black}.ttf`) for Latin text and
+the large date numeral. These are distributed here under the owner's
+license; if you fork this repo, check that your own use is covered or
+delete the directory.
+
+If `fonts/licensed/` is emptied the render falls back to open fonts,
+all under the SIL Open Font License, bundled in `generator/fonts/`:
 
 - [Chiron Sung HK](https://github.com/chiron-fonts/chiron-sung-hk) for
   Chinese text, a Hong Kong Song style face in the spirit of the MTR
@@ -138,10 +155,3 @@ Fonts, all under the SIL Open Font License, bundled in
 - [Fraunces](https://github.com/undercasetype/Fraunces) for Latin text
   and the large date numeral
 - Noto Sans SC for the small chip labels, same subset
-
-Licensed fonts can be dropped into `generator/fonts/private/` (which is
-gitignored) for local rendering: `mtr-sung.ttf` replaces Chiron Sung HK
-with per character fallback for simplified forms it lacks, and
-`canelaweb-{thin,regular,medium,bold,black}.ttf` replace Fraunces. The
-GitHub Actions render never sees these files and always uses the open
-fonts, so nothing licensed is ever published.

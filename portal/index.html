@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Tylendar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f7f3ea;
+    --ink: #1a1a1a;
+    --red: #ba2029;
+    --yellow: #ecb70f;
+    --hairline: rgba(26, 26, 26, 0.9);
+    --faint: rgba(26, 26, 26, 0.72);
+    --card: #fffdf8;
+  }
+  body.dark {
+    --paper: #141414;
+    --ink: #f2ede2;
+    --hairline: rgba(242, 237, 226, 0.9);
+    --faint: rgba(242, 237, 226, 0.55);
+    --card: #1c1c1c;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Fraunces", Georgia, serif;
+    font-optical-sizing: auto;
+    line-height: 1.45;
+    padding: 28px 18px 60px;
+    transition: background 0.4s, color 0.4s;
+  }
+  main { max-width: 430px; margin: 0 auto; }
+
+  header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; }
+  h1 { font-size: 44px; font-weight: 350; letter-spacing: -0.01em; line-height: 1; }
+  .sub { color: var(--faint); font-size: 14px; margin: 8px 0 26px; }
+  .seal {
+    background: var(--red); color: #fff; font-size: 15px; line-height: 1.15;
+    padding: 7px 8px 6px; writing-mode: vertical-rl; letter-spacing: 2px;
+    border-radius: 1px; user-select: none; margin-top: 2px;
+  }
+
+  section {
+    background: var(--card);
+    border: 1px solid var(--hairline);
+    padding: 18px 18px 20px;
+    margin-bottom: 18px;
+  }
+  h2 {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; margin-bottom: 14px; color: var(--faint);
+  }
+
+  /* Preview in a tiny RODALM: black frame, white mat */
+  .frame {
+    width: 172px; margin: 2px auto 14px; background: #fff;
+    border: 3px solid #101010; padding: 12px;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.25);
+  }
+  .frame img { display: block; width: 100%; aspect-ratio: 2 / 3; background: #eee; }
+  .meta { text-align: center; font-size: 14px; }
+  .meta .state { font-weight: 550; }
+  .meta .state.busy { color: var(--red); }
+  .meta .wake { color: var(--faint); font-size: 13px; margin-top: 3px; }
+
+  .seg { display: flex; border: 1px solid var(--hairline); }
+  .seg label {
+    flex: 1; text-align: center; padding: 9px 4px; font-size: 14px;
+    cursor: pointer; border-left: 1px solid var(--hairline); user-select: none;
+  }
+  .seg label:first-child { border-left: 0; }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg input:checked + span { font-weight: 650; }
+  .seg label:has(input:checked) { background: var(--ink); color: var(--paper); }
+  .seg label:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: -2px; }
+
+  .field { margin-top: 16px; }
+  .field label, .field-label { display: block; font-size: 14px; font-weight: 550; margin-bottom: 6px; }
+  input[type=text], input[type=password] {
+    width: 100%; padding: 10px 11px; font: inherit; font-size: 15px;
+    background: var(--paper); color: var(--ink);
+    border: 1px solid var(--hairline); border-radius: 0;
+  }
+  .hint { font-size: 12.5px; color: var(--faint); margin-top: 6px; }
+
+  button {
+    font: inherit; font-size: 15px; font-weight: 550; cursor: pointer;
+    padding: 11px 16px; border: 1px solid var(--hairline);
+    background: var(--ink); color: var(--paper); width: 100%; margin-top: 16px;
+  }
+  button.quiet { background: transparent; color: var(--ink); }
+  button.danger { background: var(--red); border-color: var(--red); color: #fff; }
+  button:disabled { opacity: 0.45; cursor: default; }
+  a.buttonlink {
+    display: block; text-align: center; text-decoration: none;
+    font-size: 15px; font-weight: 550; padding: 11px 16px; margin-top: 16px;
+    border: 1px solid var(--hairline); color: var(--ink);
+  }
+
+  .status { font-size: 13.5px; margin-top: 10px; min-height: 1.3em; }
+  .status.err { color: var(--red); }
+  .note { font-size: 13.5px; color: var(--faint); }
+  .note + .note { margin-top: 8px; }
+
+  footer {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 13px; color: var(--faint); margin-top: 26px;
+  }
+  footer .tok { display: flex; align-items: center; gap: 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--yellow); display: inline-block; }
+  .dot.on { background: #2e8b57; }
+  footer button { width: auto; margin: 0; padding: 5px 10px; font-size: 12.5px; }
+  footer a { color: inherit; }
+
+  dialog {
+    border: 1px solid var(--hairline); background: var(--card); color: var(--ink);
+    max-width: 420px; width: calc(100% - 36px); padding: 22px;
+  }
+  dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
+  dialog h2 { margin-bottom: 4px; }
+  dialog ol { padding-left: 20px; font-size: 14px; margin: 12px 0; }
+  dialog li { margin-bottom: 8px; }
+  dialog li a { color: var(--red); }
+  .row { display: flex; gap: 10px; }
+  .row button { flex: 1; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Tylendar</h1>
+      <p class="sub">Control panel for the frame on the wall</p>
+    </div>
+    <div class="seal" aria-hidden="true">設定</div>
+  </header>
+
+  <section id="panel-card">
+    <h2>On the panel</h2>
+    <div class="frame"><img id="preview" alt="Current calendar page"></div>
+    <div class="meta">
+      <div class="state" id="render-state">Checking</div>
+      <div class="wake" id="wake-line"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Settings</h2>
+    <div class="field" style="margin-top:0">
+      <span class="field-label" id="mode-label">Page mode</span>
+      <div class="seg" role="radiogroup" aria-labelledby="mode-label">
+        <label><input type="radio" name="mode" value="auto" checked><span>Auto</span></label>
+        <label><input type="radio" name="mode" value="light"><span>Light</span></label>
+        <label><input type="radio" name="mode" value="dark"><span>Dark</span></label>
+      </div>
+      <p class="hint">Auto is light by day and dark from 19:00. Light or dark pins it until you change it back.</p>
+    </div>
+    <div class="field">
+      <label for="hotspot">Hotspot label</label>
+      <input type="text" id="hotspot" maxlength="24" autocomplete="off" spellcheck="false">
+      <p class="hint">Shown beside the WiFi icon at the top of the page. Plain letters, digits and punctuation only.</p>
+    </div>
+    <button id="save">Save and render</button>
+    <div class="status" id="save-status" role="status"></div>
+  </section>
+
+  <section>
+    <h2>Render now</h2>
+    <div class="seg" role="radiogroup" aria-label="Mode for this render">
+      <label><input type="radio" name="once" value="auto" checked><span>As set</span></label>
+      <label><input type="radio" name="once" value="light"><span>Light</span></label>
+      <label><input type="radio" name="once" value="dark"><span>Dark</span></label>
+    </div>
+    <p class="hint">One shot: scheduled renders go back to following the settings above.</p>
+    <button id="render" class="danger">Render now</button>
+    <div class="status" id="render-status" role="status"></div>
+    <p class="note" style="margin-top:10px">The frame shows a new render at its next wake, or straight away if you press the EN button on the board behind it.</p>
+  </section>
+
+  <section>
+    <h2>Calendar feed</h2>
+    <p class="note">The Google Calendar address lives in the <strong>ICS_URL</strong> repository secret, so it never sits in the repo itself. To change it, update the secret on GitHub, then come back and tap Render now.</p>
+    <a class="buttonlink" href="https://github.com/chuatzeyee/Tylendar/settings/secrets/actions" target="_blank" rel="noopener">Open repository secrets</a>
+  </section>
+
+  <footer>
+    <span class="tok"><span class="dot" id="tok-dot"></span><span id="tok-label">Read only</span></span>
+    <span>
+      <button class="quiet" id="tok-btn">Add token</button>
+      <a href="https://github.com/chuatzeyee/Tylendar" target="_blank" rel="noopener" style="margin-left:10px">Repo</a>
+    </span>
+  </footer>
+</main>
+
+<dialog id="tok-dialog">
+  <h2>Connect this browser</h2>
+  <p class="note">Writes go through the GitHub API with a fine grained token that stays in this browser only. Treat it like a password.</p>
+  <ol>
+    <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Create a fine grained token</a> (sign in to GitHub if asked).</li>
+    <li>Repository access: <strong>Only select repositories</strong>, pick <strong>chuatzeyee/Tylendar</strong>.</li>
+    <li>Permissions: <strong>Contents, Read and write</strong> and <strong>Actions, Read and write</strong>.</li>
+    <li>Generate it, copy it, paste it below.</li>
+  </ol>
+  <input type="password" id="tok-input" placeholder="github_pat_..." autocomplete="off" aria-label="Personal access token">
+  <div class="status err" id="tok-status" role="status"></div>
+  <div class="row">
+    <button class="quiet" id="tok-cancel">Cancel</button>
+    <button id="tok-remove" class="quiet">Remove saved</button>
+    <button id="tok-save">Save token</button>
+  </div>
+</dialog>
+
+<script>
+"use strict";
+
+const OWNER = "chuatzeyee";
+const REPO = "Tylendar";
+const API = "https://api.github.com/repos/" + OWNER + "/" + REPO;
+const RAW = "https://raw.githubusercontent.com/" + OWNER + "/" + REPO + "/main";
+const SETTINGS_PATH = "generator/settings.json";
+const TOKEN_KEY = "tylendar_token";
+const WAKES = [20, 7 * 60 + 30, 13 * 60, 19 * 60];
+const HOTSPOT_RE = /^[ -~]{1,24}$/;
+
+const $ = (id) => document.getElementById(id);
+const token = () => localStorage.getItem(TOKEN_KEY) || "";
+
+function sgtMinutes() {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Singapore", hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(new Date());
+  const get = (t) => Number(parts.find((p) => p.type === t).value);
+  return (get("hour") % 24) * 60 + get("minute");
+}
+
+function applyClockTheme() {
+  document.body.classList.toggle("dark", sgtMinutes() >= 19 * 60);
+}
+
+async function gh(path, opts = {}) {
+  const headers = {
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    ...opts.headers,
+  };
+  if (token()) headers.Authorization = "Bearer " + token();
+  const res = await fetch(API + path, { ...opts, headers });
+  if (res.status === 401) throw new Error("Token rejected. Replace it via Add token.");
+  if (res.status === 403 || res.status === 429) throw new Error("GitHub rate limit or permissions. Try again in a minute.");
+  if (!res.ok) throw new Error("GitHub said " + res.status + ".");
+  return res.status === 204 ? null : res.json();
+}
+
+const utf8ToB64 = (s) => {
+  const bytes = new TextEncoder().encode(s);
+  let bin = "";
+  bytes.forEach((b) => { bin += String.fromCharCode(b); });
+  return btoa(bin);
+};
+const b64ToUtf8 = (b64) => {
+  const bin = atob(b64.replace(/\n/g, ""));
+  return new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+};
+
+/* ---------- panel card ---------- */
+
+function bustPreview() {
+  $("preview").src = RAW + "/output/preview.png?t=" + Date.now();
+}
+
+function ago(iso) {
+  const mins = Math.max(0, Math.round((Date.now() - new Date(iso)) / 60000));
+  if (mins < 1) return "just now";
+  if (mins < 60) return mins + " min ago";
+  const h = Math.floor(mins / 60);
+  if (h < 24) return h + " h " + (mins % 60) + " min ago";
+  return Math.floor(h / 24) + " d ago";
+}
+
+function wakeLine() {
+  const now = sgtMinutes();
+  const next = WAKES.find((w) => w > now) ?? WAKES[0] + 1440;
+  const at = String(Math.floor((next % 1440) / 60)).padStart(2, "0") + ":" +
+    String(next % 60).padStart(2, "0");
+  const d = next - now;
+  const inTxt = d >= 60 ? Math.floor(d / 60) + " h " + (d % 60) + " min" : d + " min";
+  $("wake-line").textContent = "Frame wakes at " + at + " (in " + inTxt + ")";
+}
+
+async function refreshPanelMeta() {
+  try {
+    const [runs, commits] = await Promise.all([
+      gh("/actions/workflows/render.yml/runs?per_page=1"),
+      gh("/commits?path=output/tylendar.bin&per_page=1&sha=main"),
+    ]);
+    const run = runs.workflow_runs[0];
+    const el = $("render-state");
+    el.classList.remove("busy");
+    if (run && run.status !== "completed") {
+      el.textContent = "Rendering now";
+      el.classList.add("busy");
+    } else if (run && run.conclusion && run.conclusion !== "success") {
+      el.textContent = "Last render failed, see Actions on GitHub";
+    } else if (commits[0]) {
+      el.textContent = "Rendered " + ago(commits[0].commit.committer.date);
+    } else {
+      el.textContent = "No render yet";
+    }
+    return run ? run.id : 0;
+  } catch (e) {
+    $("render-state").textContent = "Status unavailable (" + e.message + ")";
+    return 0;
+  }
+}
+
+/* After an action, wait for a new run to appear, then finish. */
+async function watchRender(prevId, statusEl) {
+  for (let i = 0; i < 50; i++) {
+    await new Promise((r) => setTimeout(r, 6000));
+    let runs;
+    try {
+      runs = await gh("/actions/workflows/render.yml/runs?per_page=1");
+    } catch { continue; }
+    const run = runs.workflow_runs[0];
+    if (!run || run.id === prevId) continue;
+    $("render-state").textContent = "Rendering now";
+    $("render-state").classList.add("busy");
+    if (run.status === "completed") {
+      if (run.conclusion === "success") {
+        statusEl.textContent = "Rendered. The frame shows it at the next wake, or press EN.";
+        statusEl.classList.remove("err");
+        setTimeout(bustPreview, 8000);
+      } else {
+        statusEl.textContent = "Render failed, check the Actions tab.";
+        statusEl.classList.add("err");
+      }
+      refreshPanelMeta();
+      return;
+    }
+  }
+  statusEl.textContent = "Still running, check the Actions tab.";
+}
+
+/* ---------- settings ---------- */
+
+let settingsSha = null;
+
+async function loadSettings() {
+  try {
+    const file = await gh("/contents/" + SETTINGS_PATH + "?ref=main");
+    settingsSha = file.sha;
+    const s = JSON.parse(b64ToUtf8(file.content));
+    const mode = ["auto", "light", "dark"].includes(s.mode) ? s.mode : "auto";
+    document.querySelector('input[name=mode][value="' + mode + '"]').checked = true;
+    $("hotspot").value = typeof s.hotspot === "string" ? s.hotspot : "";
+  } catch (e) {
+    $("save-status").textContent = "Could not load settings (" + e.message + ")";
+    $("save-status").classList.add("err");
+  }
+}
+
+async function needToken() {
+  if (token()) return true;
+  openTokenDialog();
+  return false;
+}
+
+async function saveSettings() {
+  const status = $("save-status");
+  status.classList.remove("err");
+  const hotspot = $("hotspot").value.trim();
+  if (!HOTSPOT_RE.test(hotspot)) {
+    status.textContent = "Hotspot label must be 1 to 24 plain ASCII characters.";
+    status.classList.add("err");
+    return;
+  }
+  if (!(await needToken())) return;
+  const mode = document.querySelector("input[name=mode]:checked").value;
+  const btn = $("save");
+  btn.disabled = true;
+  status.textContent = "Saving";
+  try {
+    const prevId = await refreshPanelMeta();
+    if (settingsSha === null) {
+      const file = await gh("/contents/" + SETTINGS_PATH + "?ref=main");
+      settingsSha = file.sha;
+    }
+    const body = JSON.stringify({ hotspot, mode }, null, 2) + "\n";
+    const put = await gh("/contents/" + SETTINGS_PATH, {
+      method: "PUT",
+      body: JSON.stringify({
+        message: "portal: update settings",
+        content: utf8ToB64(body),
+        sha: settingsSha,
+      }),
+    });
+    settingsSha = put.content.sha;
+    status.textContent = "Saved. Rendering";
+    watchRender(prevId, status);
+  } catch (e) {
+    settingsSha = null;
+    status.textContent = e.message;
+    status.classList.add("err");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* ---------- render now ---------- */
+
+async function renderNow() {
+  const status = $("render-status");
+  status.classList.remove("err");
+  if (!(await needToken())) return;
+  const mode = document.querySelector("input[name=once]:checked").value;
+  const btn = $("render");
+  btn.disabled = true;
+  status.textContent = "Asking GitHub to render";
+  try {
+    const prevId = await refreshPanelMeta();
+    await gh("/actions/workflows/render.yml/dispatches", {
+      method: "POST",
+      body: JSON.stringify({ ref: "main", inputs: { mode } }),
+    });
+    status.textContent = "Queued. Rendering";
+    watchRender(prevId, status);
+  } catch (e) {
+    status.textContent = e.message;
+    status.classList.add("err");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* ---------- token dialog ---------- */
+
+function refreshTokenChip() {
+  const has = Boolean(token());
+  $("tok-dot").classList.toggle("on", has);
+  $("tok-label").textContent = has ? "Connected" : "Read only";
+  $("tok-btn").textContent = has ? "Token" : "Add token";
+}
+
+function openTokenDialog() {
+  $("tok-input").value = "";
+  $("tok-status").textContent = "";
+  $("tok-remove").style.display = token() ? "" : "none";
+  $("tok-dialog").showModal();
+}
+
+function saveToken() {
+  const v = $("tok-input").value.trim();
+  if (!/^(github_pat_|ghp_)[A-Za-z0-9_]{20,}$/.test(v)) {
+    $("tok-status").textContent = "That does not look like a GitHub token.";
+    return;
+  }
+  localStorage.setItem(TOKEN_KEY, v);
+  $("tok-dialog").close();
+  refreshTokenChip();
+}
+
+/* ---------- boot ---------- */
+
+$("save").addEventListener("click", saveSettings);
+$("render").addEventListener("click", renderNow);
+$("tok-btn").addEventListener("click", openTokenDialog);
+$("tok-save").addEventListener("click", saveToken);
+$("tok-cancel").addEventListener("click", () => $("tok-dialog").close());
+$("tok-remove").addEventListener("click", () => {
+  localStorage.removeItem(TOKEN_KEY);
+  $("tok-dialog").close();
+  refreshTokenChip();
+});
+
+applyClockTheme();
+bustPreview();
+wakeLine();
+refreshTokenChip();
+loadSettings();
+refreshPanelMeta();
+setInterval(wakeLine, 30000);
+setInterval(applyClockTheme, 60000);
+</script>
+</body>
+</html>
