@@ -11,8 +11,10 @@ Outputs:
                        00 black, 01 white, 10 yellow, 11 red
 """
 
+import os
 import sys
-from datetime import date, datetime
+import urllib.request
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -83,10 +85,13 @@ class DuoFont:
         self.cover = cover
 
     def pick(self, c):
-        return self.primary if ord(c) in self.cover else self.fallback
+        f = self.primary if ord(c) in self.cover else self.fallback
+        return f.pick(c) if isinstance(f, DuoFont) else f
 
     def getlength(self, text):
         return sum(self.pick(c).getlength(c) for c in text)
+
+LATIN_COVER = set(range(0x20, 0x7F))
 
 TIMEZONE = "Asia/Singapore"
 YI_JI_MAX = 4
@@ -124,6 +129,12 @@ def latin(size, weight=400, opsz=32, soft=0):
     return font
 
 
+# Mask cutoff for text. 128 drops Song hairline strokes that render
+# under one pixel wide (the bottom bar of 日 vanished on the panel);
+# 60 clogs dense glyphs at small sizes. 80 keeps both.
+TEXT_THRESHOLD = 80
+
+
 def draw_text(img, xy, text, font, fill, anchor="la", tracking=0):
     """Draw text through a thresholded mask so every pixel is an exact
     palette color. Anti-aliased edge pixels would otherwise quantize into
@@ -144,7 +155,7 @@ def draw_text(img, xy, text, font, fill, anchor="la", tracking=0):
             x += font.getlength(c) + tracking
     else:
         d.text(xy, text, font=font, fill=255, anchor=anchor)
-    mask = layer.point(lambda p: 255 if p >= 128 else 0)
+    mask = layer.point(lambda p: 255 if p >= TEXT_THRESHOLD else 0)
     img.paste(fill, (0, 0), mask)
 
 
@@ -188,6 +199,50 @@ def huangli(d):
     return {k: to_traditional(v) for k, v in data.items()}
 
 
+def event_time(dt):
+    h = dt.hour % 12 or 12
+    ap = "am" if dt.hour < 12 else "pm"
+    return f"{h}.{dt.minute:02d}{ap}" if dt.minute else f"{h}{ap}"
+
+
+def calendar_events(d):
+    """The day's first two events from the ICS feed named by the ICS_URL
+    environment variable (a URL or a local file path), or None. Any
+    failure falls back to the almanac lines; a broken calendar fetch
+    must never cost the day's render."""
+    url = os.environ.get("ICS_URL", "").strip()
+    if not url:
+        return None
+    try:
+        import icalendar
+        import recurring_ical_events
+
+        if url.startswith(("http://", "https://")):
+            with urllib.request.urlopen(url, timeout=30) as r:
+                data = r.read()
+        else:
+            data = Path(url).read_bytes()
+        cal = icalendar.Calendar.from_ical(data)
+        tz = ZoneInfo(TIMEZONE)
+        day_start = datetime(d.year, d.month, d.day, tzinfo=tz)
+        found = []
+        for ev in recurring_ical_events.of(cal).between(day_start, day_start + timedelta(days=1)):
+            title = str(ev.get("SUMMARY", "")).strip()
+            if not title:
+                continue
+            start = ev["DTSTART"].dt
+            if isinstance(start, datetime):
+                start = start.astimezone(tz)
+                found.append((1, start, event_time(start) + " " + title))
+            else:
+                found.append((0, day_start, title))
+        found.sort(key=lambda e: (e[0], e[1]))
+        return [line for _, _, line in found[:2]] or None
+    except Exception as e:
+        print(f"calendar fetch failed, using almanac lines: {e}", file=sys.stderr)
+        return None
+
+
 def cn_number(n):
     if n <= 10:
         return CN_NUM[n - 1]
@@ -214,21 +269,29 @@ def render(d):
     draw.rectangle([left, 118, right, 119], fill=BLACK)
 
     # The day: huge, flush left
-    size = 430
-    f_day = latin(size, 200, opsz=144)
-    avail = right - left + 10
-    w = text_width(str(hl["day"]), f_day)
-    if w > avail:
-        size = int(size * avail / w)
+    # Flush the numeral ink, not the pen position, to the left margin.
+    # Side bearings vary per digit and getbbox does not report them, so
+    # render to a scratch layer, measure the ink, then paste shifted.
+    size, day = 430, str(hl["day"])
+    while True:
         f_day = latin(size, 200, opsz=144)
-    draw_text(img, (left - 6, 448), str(hl["day"]), f_day, accent, anchor="ls")
+        layer = Image.new("L", img.size, 0)
+        ImageDraw.Draw(layer).text((40, 448), day, font=f_day, fill=255, anchor="ls")
+        mask = layer.point(lambda p: 255 if p >= TEXT_THRESHOLD else 0)
+        bb = mask.getbbox()
+        if bb[2] - bb[0] <= right - left or size < 200:
+            break
+        size = int(size * (right - left) / (bb[2] - bb[0]))
+    img.paste(accent, (left - bb[0], 0), mask)
 
     # Hairline above the weekday row
     draw.rectangle([left, 552, right, 553], fill=BLACK)
 
-    # Weekday row: English left in accent color, Chinese right
-    draw_text(img, (left, 600), hl["weekday_en"], latin(46, 800), accent, anchor="lm")
-    draw_text(img, (right, 600), hl["weekday_cn"], serif(28, 500), BLACK, anchor="rm", tracking=8)
+    # Weekday band: English left in accent color, Chinese right,
+    # enclosed by hairlines above and below
+    draw_text(img, (left, 586), hl["weekday_en"], latin(46, 800), accent, anchor="lm")
+    draw_text(img, (right, 586), hl["weekday_cn"], serif(28, 500), BLACK, anchor="rm", tracking=8)
+    draw.rectangle([left, 630, right, 631], fill=BLACK)
 
     # Lunar date and ganzhi pillars
     draw_text(img, (left, 690), hl["lunar_md"], serif(58, 600), BLACK, anchor="lm", tracking=6)
@@ -251,18 +314,33 @@ def render(d):
     elif hl["jieqi_line"]:
         draw_text(img, (left, 807), hl["jieqi_line"], serif(24, 400), BLACK, anchor="lm", tracking=3)
 
-    # Yi and Ji rows left, chong sha and nayin right
+    # Yi and Ji rows left; calendar events right when an ICS feed is
+    # configured, the chong sha and nayin lines otherwise
+    events = calendar_events(d)
+    asides = events or [f"{hl['chong']}  {hl['sha']}", hl["nayin"]]
+    asides += [""] * (2 - len(asides))
     f_chip = sans_sc(21, 700)
     f_items = serif(23, 400)
-    rows = [("宜", hl["yi"], RED, f"{hl['chong']} {hl['sha']}"),
-            ("忌", hl["ji"], BLACK, hl["nayin"])]
+    # Latin (event times and English titles) set in the Latin face,
+    # CJK in the serif; drawn on a shared baseline so mixing works.
+    # 22px minimum: dense nayin glyphs (the rain radical pair) clog
+    # into blobs any smaller.
+    f_aside = DuoFont(latin(20, 500), serif(22, 400), LATIN_COVER)
+    rows = [("宜", hl["yi"], RED, asides[0]), ("忌", hl["ji"], BLACK, asides[1])]
     for i, (label, items, color, aside) in enumerate(rows):
-        ry = 862 + i * 56
+        ry = 856 + i * 52
         chip = 32
         draw.rectangle([left, ry, left + chip, ry + chip], fill=color)
         draw_text(img, (left + chip / 2, ry + chip / 2 + 1), label, f_chip, WHITE, anchor="mm")
-        draw_text(img, (left + chip + 18, ry + chip / 2 + 1), "  ".join(items), f_items, BLACK, anchor="lm")
-        draw_text(img, (right, ry + chip / 2 + 1), aside, serif(18, 400), BLACK, anchor="rm")
+        line = "  ".join(items)
+        draw_text(img, (left + chip + 18, ry + chip / 2 + 1), line, f_items, BLACK, anchor="lm")
+        avail = right - (left + chip + 18 + text_width(line, f_items)) - 24
+        if aside and text_width(aside, f_aside) > avail:
+            while aside and text_width(aside + "..", f_aside) > avail:
+                aside = aside[:-1]
+            aside = aside.rstrip() + ".." if aside else ""
+        if aside:
+            draw_text(img, (right, ry + chip / 2 + 7), aside, f_aside, BLACK, anchor="rs")
     return img
 
 

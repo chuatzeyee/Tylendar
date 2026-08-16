@@ -49,6 +49,21 @@ docs/        Flashing guide for macOS, hardware assembly guide
 4. Assemble the display, adapter, and frame. See
    [docs/ASSEMBLY.md](docs/ASSEMBLY.md), including the RESE switch
    position and mat cutting measurements.
+5. Optional: show your Google Calendar on the page. In Google Calendar
+   open Settings, pick your calendar, then "Integrate calendar" and copy
+   the "Secret address in iCal format". Save it as a repo secret named
+   `ICS_URL`:
+
+   ```
+   gh secret set ICS_URL
+   ```
+
+   The nightly render then replaces the two small almanac lines (zodiac
+   clash and nayin) with the day's first two events. Days with no events
+   fall back to the almanac lines. The secret address stays in GitHub
+   Actions; nothing from your calendar is committed except the rendered
+   pixels. Since rendering happens just after midnight, events added
+   during the day appear the next morning.
 
 ## Renderer
 

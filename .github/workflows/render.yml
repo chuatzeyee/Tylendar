@@ -22,6 +22,8 @@ jobs:
           python-version: "3.12"
       - run: pip install -r generator/requirements.txt
       - run: python generator/generate.py
+        env:
+          ICS_URL: ${{ secrets.ICS_URL }}
       - name: Commit rendered output
         run: |
           git config user.name "tylendar-bot"
