@@ -62,11 +62,18 @@ Always use the `cu.` entry, not the `tty.` entry with the same name.
 
 ## Step 3: Open the sketch and configure it
 
-1. In the IDE choose File, Open, and select
+1. In Terminal, create your local config from the template. It is
+   gitignored, so your WiFi passwords never end up in git:
+
+   ```
+   cp firmware/Tylendar/config.example.h firmware/Tylendar/config.h
+   ```
+
+2. In the IDE choose File, Open, and select
    `firmware/Tylendar/Tylendar.ino` from this repo. The IDE opens the
    whole folder including the driver files, you will see tabs for
    `config.h`, `epd_gdem102f91.h`, and `epd_gdem102f91.cpp`.
-2. Click the `config.h` tab and fill in the WiFi list. The board tries
+3. Click the `config.h` tab and fill in the WiFi list. The board tries
    each network in order at every wake, so list every place the frame
    lives; delete the second line if there is only one:
 
@@ -82,7 +89,7 @@ Always use the `cu.` entry, not the `tty.` entry with the same name.
    2.4/5 GHz network with one name, that is fine, the ESP32 will find
    the 2.4 GHz side. Corporate login networks (802.1X) and captive
    portals will not work; ask for the guest or IoT network instead.
-3. If you forked the repo, also change `IMAGE_URL` to point at your
+4. If you forked the repo, also change `IMAGE_URL` to point at your
    fork. If you are using chuatzeyee/Tylendar directly, leave it.
 
 ## Step 4: Board settings

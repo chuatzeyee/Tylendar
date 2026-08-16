@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: cp firmware/Tylendar/config.example.h firmware/Tylendar/config.h
       - uses: arduino/compile-sketches@v1
         with:
           fqbn: esp32:esp32:esp32

@@ -42,9 +42,10 @@ docs/        Flashing guide for macOS, hardware assembly guide
 1. Fork this repo (or use it as a template), then enable GitHub Actions
    on your fork. Run the "Render daily calendar" workflow once by hand so
    `output/tylendar.bin` exists.
-2. Edit `firmware/Tylendar/config.h`: the WiFi network list (every place
-   the frame lives) and, if you forked, your own raw.githubusercontent.com
-   URL.
+2. Copy `firmware/Tylendar/config.example.h` to `config.h` (same folder,
+   gitignored so your passwords never get committed), then edit it: the
+   WiFi network list (every place the frame lives) and, if you forked,
+   your own raw.githubusercontent.com URL.
 3. Flash the firmware to the ESP32-L. Full walkthrough for macOS in
    [docs/FLASHING_MACOS.md](docs/FLASHING_MACOS.md).
 4. Assemble the display, adapter, and frame. See
