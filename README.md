@@ -94,3 +94,10 @@ Fonts, all under the SIL Open Font License, bundled in
 - [Fraunces](https://github.com/undercasetype/Fraunces) for Latin text
   and the large date numeral
 - Noto Sans SC for the small chip labels, same subset
+
+Licensed fonts can be dropped into `generator/fonts/private/` (which is
+gitignored) for local rendering: `mtr-sung.ttf` replaces Chiron Sung HK
+with per character fallback for simplified forms it lacks, and
+`canelaweb-{thin,regular,medium,bold,black}.ttf` replace Fraunces. The
+GitHub Actions render never sees these files and always uses the open
+fonts, so nothing licensed is ever published.

@@ -35,6 +35,45 @@ SERIF = str(ROOT / "fonts" / "ChironSungHK.ttf")
 SANS_SC = str(ROOT / "fonts" / "NotoSansSC.ttf")
 LATIN = str(ROOT / "fonts" / "Fraunces.ttf")
 
+# Licensed fonts dropped into fonts/private/ (gitignored) are picked up
+# automatically for local rendering. GitHub Actions never has them and
+# renders with the open fonts above.
+PRIVATE = ROOT / "fonts" / "private"
+MTR_SUNG = PRIVATE / "mtr-sung.ttf"
+CANELA_BY_WEIGHT = [
+    (250, PRIVATE / "canelaweb-thin.ttf"),
+    (450, PRIVATE / "canelaweb-regular.ttf"),
+    (650, PRIVATE / "canelaweb-medium.ttf"),
+    (800, PRIVATE / "canelaweb-bold.ttf"),
+    (10_000, PRIVATE / "canelaweb-black.ttf"),
+]
+
+
+def _mtr_codepoints():
+    from fontTools.ttLib import TTFont
+
+    return set(TTFont(str(MTR_SUNG)).getBestCmap())
+
+
+MTR_COVER = _mtr_codepoints() if MTR_SUNG.exists() else None
+
+
+class DuoFont:
+    """Primary font with per-character fallback for uncovered glyphs.
+    MTR Sung is traditional only, so simplified characters fall back to
+    Chiron Sung HK, which shares its Hong Kong Song style."""
+
+    def __init__(self, primary, fallback, cover):
+        self.primary = primary
+        self.fallback = fallback
+        self.cover = cover
+
+    def pick(self, c):
+        return self.primary if ord(c) in self.cover else self.fallback
+
+    def getlength(self, text):
+        return sum(self.pick(c).getlength(c) for c in text)
+
 TIMEZONE = "Asia/Singapore"
 YI_JI_MAX = 4
 
@@ -51,7 +90,9 @@ CN_NUM = "一二三四五六七八九十"
 def serif(size, weight=400):
     font = ImageFont.truetype(SERIF, size)
     font.set_variation_by_axes([weight, 0])
-    return font
+    if MTR_COVER is None:
+        return font
+    return DuoFont(ImageFont.truetype(str(MTR_SUNG), size), font, MTR_COVER)
 
 
 def sans_sc(size, weight=400):
@@ -61,6 +102,9 @@ def sans_sc(size, weight=400):
 
 
 def latin(size, weight=400, opsz=32, soft=0):
+    for max_weight, path in CANELA_BY_WEIGHT:
+        if path.exists() and weight <= max_weight:
+            return ImageFont.truetype(str(path), size)
     font = ImageFont.truetype(LATIN, size)
     font.set_variation_by_axes([opsz, weight, soft, 0])
     return font
@@ -72,7 +116,8 @@ def draw_text(img, xy, text, font, fill, anchor="la", tracking=0):
     speckle on the panel."""
     layer = Image.new("L", img.size, 0)
     d = ImageDraw.Draw(layer)
-    if tracking:
+    duo = isinstance(font, DuoFont)
+    if tracking or duo:
         total = sum(font.getlength(c) for c in text) + tracking * (len(text) - 1)
         x, y = xy
         if anchor[0] == "m":
@@ -80,7 +125,8 @@ def draw_text(img, xy, text, font, fill, anchor="la", tracking=0):
         elif anchor[0] == "r":
             x -= total
         for c in text:
-            d.text((x, y), c, font=font, fill=255, anchor="l" + anchor[1])
+            f = font.pick(c) if duo else font
+            d.text((x, y), c, font=f, fill=255, anchor="l" + anchor[1])
             x += font.getlength(c) + tracking
     else:
         d.text(xy, text, font=font, fill=255, anchor=anchor)
