@@ -56,8 +56,8 @@ docs/        Flashing guide for macOS, hardware assembly guide
 through thresholded masks so every pixel is exactly one of the four panel
 colors; anti-aliased edges would otherwise quantize into speckle. Red is
 reserved for Sundays, festivals, and the year seal. Yellow is used
-sparingly: the solar term tag and one small diamond accent, since large
-yellow fields render muddy on this film.
+sparingly, only for the solar term tag, since large yellow fields render
+muddy on this film.
 
 Render any date to check the layout:
 

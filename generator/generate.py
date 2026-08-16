@@ -96,8 +96,8 @@ FPC_AT_BOTTOM = True
 
 WEEKDAY_EN = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY",
               "FRIDAY", "SATURDAY", "SUNDAY"]
-MONTH_EN = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY",
-            "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"]
+MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 CN_NUM = "一二三四五六七八九十"
 
 
@@ -164,10 +164,10 @@ def huangli(d):
     data = {
         "solar": solar,
         "day": d.day,
-        "month_en": MONTH_EN[d.month - 1],
+        "month_abbr": MONTH_ABBR[d.month - 1],
         "year": d.year,
         "weekday_cn": "星期" + solar.getWeekInChinese(),
-        "weekday_en": WEEKDAY_EN[d.weekday()],
+        "weekday_en": WEEKDAY_EN[d.weekday()].capitalize(),
         "is_sunday": d.weekday() == 6,
         "lunar_md": lunar.getMonthInChinese() + "月" + lunar.getDayInChinese(),
         "ganzhi_year": lunar.getYearInGanZhi(),
@@ -201,38 +201,41 @@ def render(d):
     draw = ImageDraw.Draw(img)
     hl = huangli(d)
     accent = RED if (hl["is_sunday"] or hl["festivals"] or hl["jieqi_today"]) else BLACK
+    left, right = 120, W - 40
 
-    # Header: lunar month top left, ganzhi seal top right
-    draw_text(img, (MARGIN, 64), f"{hl['year']}", latin(30, 550), BLACK)
-    draw_text(img, (MARGIN, 104), hl["month_en"], latin(21, 600), BLACK, tracking=6)
-
-    seal = 78
-    sx, sy = W - MARGIN - seal, 56
-    draw.rectangle([sx, sy, sx + seal, sy + seal], fill=RED)
-    f_seal = serif(30, 700)
-    draw_text(img, (sx + seal / 2, sy + 21), hl["ganzhi_year"][0], f_seal, WHITE, anchor="mm")
-    draw_text(img, (sx + seal / 2, sy + 57), hl["ganzhi_year"][1], f_seal, WHITE, anchor="mm")
+    # Header: Aug 2026 left, horizontal ganzhi seal right
+    draw_text(img, (left, 78), f"{hl['month_abbr']} {hl['year']}", latin(48, 800), BLACK, anchor="lm")
+    sw, sh = 88, 40
+    draw.rectangle([right - sw, 50, right, 50 + sh], fill=RED)
+    draw_text(img, (right - sw / 2, 50 + sh / 2 + 1), hl["ganzhi_year"], serif(26, 600), WHITE,
+              anchor="mm", tracking=6)
 
     # Hairline under header
-    draw.rectangle([MARGIN, 168, W - MARGIN, 169], fill=BLACK)
+    draw.rectangle([left, 118, right, 119], fill=BLACK)
 
-    # The day
-    draw_text(img, (W / 2, 340), str(hl["day"]), latin(330, 200, opsz=144), accent, anchor="mm")
-    draw_text(img, (W / 2, 532), hl["weekday_cn"], sans_sc(30, 500), BLACK, anchor="mm", tracking=8)
-    draw_text(img, (W / 2, 574), hl["weekday_en"], latin(17, 550), BLACK, anchor="mm", tracking=7)
+    # The day: huge, flush left
+    size = 430
+    f_day = latin(size, 200, opsz=144)
+    avail = right - left + 10
+    w = text_width(str(hl["day"]), f_day)
+    if w > avail:
+        size = int(size * avail / w)
+        f_day = latin(size, 200, opsz=144)
+    draw_text(img, (left - 6, 448), str(hl["day"]), f_day, accent, anchor="ls")
 
-    # Divider with yellow diamond
-    dy = 624
-    draw.rectangle([MARGIN, dy, W / 2 - 26, dy + 1], fill=BLACK)
-    draw.rectangle([W / 2 + 26, dy, W - MARGIN, dy + 1], fill=BLACK)
-    draw.polygon([(W / 2, dy - 7), (W / 2 + 8, dy), (W / 2, dy + 8), (W / 2 - 8, dy)], fill=YELLOW)
+    # Hairline above the weekday row
+    draw.rectangle([left, 552, right, 553], fill=BLACK)
 
-    # Lunar date
-    draw_text(img, (W / 2, 682), hl["lunar_md"], serif(54, 600), BLACK, anchor="mm", tracking=6)
+    # Weekday row: English left in accent color, Chinese right
+    draw_text(img, (left, 600), hl["weekday_en"], latin(46, 800), accent, anchor="lm")
+    draw_text(img, (right, 600), hl["weekday_cn"], serif(28, 500), BLACK, anchor="rm", tracking=8)
+
+    # Lunar date and ganzhi pillars
+    draw_text(img, (left, 690), hl["lunar_md"], serif(58, 600), BLACK, anchor="lm", tracking=6)
     sub = f"{hl['ganzhi_year']}{hl['zodiac']}年  {hl['ganzhi_month']}月  {hl['ganzhi_day']}日"
-    draw_text(img, (W / 2, 738), sub, serif(22, 400), BLACK, anchor="mm", tracking=2)
+    draw_text(img, (left, 758), sub, serif(25, 400), BLACK, anchor="lm", tracking=2)
 
-    # Festival (red tag) or solar term (yellow tag)
+    # Festival (red tag) or solar term (yellow tag) or day count line
     line3, tag_bg, tag_fg = None, YELLOW, BLACK
     if hl["jieqi_today"]:
         line3 = hl["jieqi_today"]
@@ -241,28 +244,25 @@ def render(d):
     if line3:
         f_tag = serif(24, 600)
         tw = text_width(line3, f_tag, tracking=4)
-        pad = 14
-        y0, y1 = 766, 806
-        draw.rectangle([W / 2 - tw / 2 - pad, y0, W / 2 + tw / 2 + pad, y1], fill=tag_bg)
-        draw_text(img, (W / 2, (y0 + y1) / 2 + 1), line3, f_tag, tag_fg, anchor="mm", tracking=4)
+        pad = 12
+        y0, y1 = 788, 826
+        draw.rectangle([left, y0, left + tw + 2 * pad, y1], fill=tag_bg)
+        draw_text(img, (left + pad, (y0 + y1) / 2 + 1), line3, f_tag, tag_fg, anchor="lm", tracking=4)
     elif hl["jieqi_line"]:
-        draw_text(img, (W / 2, 784), hl["jieqi_line"], serif(20, 400), BLACK, anchor="mm", tracking=3)
+        draw_text(img, (left, 807), hl["jieqi_line"], serif(24, 400), BLACK, anchor="lm", tracking=3)
 
-    # Yi and Ji rows
+    # Yi and Ji rows left, chong sha and nayin right
     f_chip = sans_sc(21, 700)
-    f_items = serif(21, 400)
-    rows = [("宜", hl["yi"], RED), ("忌", hl["ji"], BLACK)]
-    for i, (label, items, color) in enumerate(rows):
-        ry = 832 + i * 46
-        chip = 30
-        draw.rectangle([MARGIN, ry, MARGIN + chip, ry + chip], fill=color)
-        draw_text(img, (MARGIN + chip / 2, ry + chip / 2 + 1), label, f_chip, WHITE, anchor="mm")
-        draw_text(img, (MARGIN + chip + 18, ry + chip / 2 + 1), "  ".join(items), f_items, BLACK, anchor="lm")
-
-    # Footer
-    fy = 936
-    draw_text(img, (MARGIN, fy), f"{hl['chong']} {hl['sha']}", serif(16, 400), BLACK, anchor="lm")
-    draw_text(img, (W - MARGIN, fy), hl["nayin"], serif(16, 400), BLACK, anchor="rm")
+    f_items = serif(23, 400)
+    rows = [("宜", hl["yi"], RED, f"{hl['chong']} {hl['sha']}"),
+            ("忌", hl["ji"], BLACK, hl["nayin"])]
+    for i, (label, items, color, aside) in enumerate(rows):
+        ry = 862 + i * 56
+        chip = 32
+        draw.rectangle([left, ry, left + chip, ry + chip], fill=color)
+        draw_text(img, (left + chip / 2, ry + chip / 2 + 1), label, f_chip, WHITE, anchor="mm")
+        draw_text(img, (left + chip + 18, ry + chip / 2 + 1), "  ".join(items), f_items, BLACK, anchor="lm")
+        draw_text(img, (right, ry + chip / 2 + 1), aside, serif(18, 400), BLACK, anchor="rm")
     return img
 
 
