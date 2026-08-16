@@ -76,17 +76,16 @@ SERIF = str(ROOT / "fonts" / "ChironSungHK.ttf")
 SANS_SC = str(ROOT / "fonts" / "NotoSansSC.ttf")
 LATIN = str(ROOT / "fonts" / "Fraunces.ttf")
 
-# Licensed fonts dropped into fonts/private/ (gitignored) are picked up
-# automatically for local rendering. GitHub Actions never has them and
-# renders with the open fonts above.
-PRIVATE = ROOT / "fonts" / "private"
-MTR_SUNG = PRIVATE / "mtr-sung.ttf"
+# Licensed fonts in fonts/licensed/ take priority over the open fonts
+# above; if the directory is emptied the render falls back cleanly.
+LICENSED = ROOT / "fonts" / "licensed"
+MTR_SUNG = LICENSED / "mtr-sung.ttf"
 CANELA_BY_WEIGHT = [
-    (250, PRIVATE / "canelaweb-thin.ttf"),
-    (450, PRIVATE / "canelaweb-regular.ttf"),
-    (650, PRIVATE / "canelaweb-medium.ttf"),
-    (800, PRIVATE / "canelaweb-bold.ttf"),
-    (10_000, PRIVATE / "canelaweb-black.ttf"),
+    (250, LICENSED / "canelaweb-thin.ttf"),
+    (450, LICENSED / "canelaweb-regular.ttf"),
+    (650, LICENSED / "canelaweb-medium.ttf"),
+    (800, LICENSED / "canelaweb-bold.ttf"),
+    (10_000, LICENSED / "canelaweb-black.ttf"),
 ]
 
 
