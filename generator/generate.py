@@ -346,7 +346,7 @@ def render(d):
         f_venue = DuoFont(latin(19, 400), serif(22, 400), LATIN_COVER)
         title_x = left + 96
         # Hairline separating the almanac block from the events table
-        draw.rectangle([left, 848, right, 849], fill=BLACK)
+        draw.rectangle([left, 862, right, 863], fill=BLACK)
         # Bottom anchored: tighter leading closes the gap upward so the
         # last baseline keeps the 942 ink bound.
         for i, (when, title, venue) in enumerate(events):
