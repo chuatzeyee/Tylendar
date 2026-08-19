@@ -512,15 +512,41 @@ async function validateToken(t) {
   if (!repo.permissions || !repo.permissions.push) {
     throw new Error("That token cannot write to this repo. Check its Contents permission.");
   }
-  /* A token with Contents but without Actions would pass the check
-     above and then fail on half the portal, so probe Actions here
-     and refuse it with a message that names the fix. */
-  const probe = await fetch(API + "/actions/workflows/render.yml/runs?per_page=1", { headers });
-  if (probe.status === 403 || probe.status === 429) {
-    if (probe.headers.get("x-ratelimit-remaining") === "0") {
-      throw new Error("GitHub rate limit hit. Try again in a few minutes.");
-    }
-    throw new Error("That token is missing the Actions permission. Edit it on GitHub, grant Actions, Read and write.");
+}
+
+/* GitHub reports push: true for the owner's fine grained token even
+   when a permission box was left unticked, so at unlock time exercise
+   both write endpoints for real. The bogus sha and ref make GitHub
+   refuse the action itself (409/422) after the permission has passed,
+   so nothing is ever written or dispatched. */
+async function probeGrants(t) {
+  const headers = {
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    Authorization: "Bearer " + t,
+    "Content-Type": "application/json",
+  };
+  const rateLimited = (res) =>
+    res.headers.get("x-ratelimit-remaining") === "0"
+      ? new Error("GitHub rate limit hit. Try again in a few minutes.")
+      : null;
+  const missing = (scope) =>
+    new Error("That token is missing the " + scope + " permission. Edit it on GitHub, grant " + scope + ", Read and write.");
+  const contents = await fetch(API + "/contents/" + SETTINGS_PATH, {
+    method: "PUT",
+    headers,
+    body: JSON.stringify({ message: "portal: permission probe", content: "", sha: "0".repeat(40) }),
+  });
+  if ([403, 404, 429].includes(contents.status)) {
+    throw rateLimited(contents) || missing("Contents");
+  }
+  const actions = await fetch(API + "/actions/workflows/render.yml/dispatches", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ ref: "refs/heads/tylendar-permission-probe" }),
+  });
+  if ([403, 404, 429].includes(actions.status)) {
+    throw rateLimited(actions) || missing("Actions");
   }
 }
 
@@ -549,6 +575,7 @@ async function unlock() {
   status.textContent = "Checking with GitHub";
   try {
     await validateToken(v);
+    await probeGrants(v);
     localStorage.setItem(TOKEN_KEY, v);
     startApp();
   } catch (e) {
