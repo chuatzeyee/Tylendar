@@ -11,6 +11,9 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
+#include <WebServer.h>
+#include <DNSServer.h>
+#include <Preferences.h>
 #include <time.h>
 #include "config.h"
 #include "epd_gdem102f91.h"
@@ -28,28 +31,40 @@ struct WifiNetwork {
 static const WifiNetwork WIFI_LIST[] = WIFI_NETWORKS;
 static const size_t WIFI_LIST_COUNT = sizeof(WIFI_LIST) / sizeof(WIFI_LIST[0]);
 
+static bool joinNetwork(const char *ssid, const char *password) {
+  Serial.printf("WiFi: connecting to %s\n", ssid);
+  WiFi.begin(ssid, password);
+  uint32_t start = millis();
+  while (millis() - start <= WIFI_TIMEOUT_MS) {
+    wl_status_t st = WiFi.status();
+    if (st == WL_CONNECTED) {
+      Serial.printf("WiFi: connected, ip %s\n", WiFi.localIP().toString().c_str());
+      return true;
+    }
+    // Absent SSID fails in seconds, no need to burn the full timeout
+    // before trying the next network on the list.
+    if (st == WL_NO_SSID_AVAIL || st == WL_CONNECT_FAILED) break;
+    delay(250);
+  }
+  Serial.println("WiFi: not this one");
+  WiFi.disconnect(true);
+  delay(100);
+  return false;
+}
+
 static bool connectWifi() {
   WiFi.mode(WIFI_STA);
+  Preferences prefs;
+  prefs.begin("tylendar", true);
+  String savedSsid = prefs.getString("ssid", "");
+  String savedPass = prefs.getString("pass", "");
+  prefs.end();
+  if (savedSsid.length() &&
+      joinNetwork(savedSsid.c_str(), savedPass.c_str())) return true;
   for (size_t i = 0; i < WIFI_LIST_COUNT; i++) {
-    Serial.printf("WiFi: connecting to %s\n", WIFI_LIST[i].ssid);
-    WiFi.begin(WIFI_LIST[i].ssid, WIFI_LIST[i].password);
-    uint32_t start = millis();
-    while (millis() - start <= WIFI_TIMEOUT_MS) {
-      wl_status_t st = WiFi.status();
-      if (st == WL_CONNECTED) {
-        Serial.printf("WiFi: connected, ip %s\n", WiFi.localIP().toString().c_str());
-        return true;
-      }
-      // Absent SSID fails in seconds, no need to burn the full timeout
-      // before trying the next network on the list.
-      if (st == WL_NO_SSID_AVAIL || st == WL_CONNECT_FAILED) break;
-      delay(250);
-    }
-    Serial.println("WiFi: not this one");
-    WiFi.disconnect(true);
-    delay(100);
+    if (joinNetwork(WIFI_LIST[i].ssid, WIFI_LIST[i].password)) return true;
   }
-  Serial.println("WiFi: no listed network reachable");
+  Serial.println("WiFi: no known network reachable");
   return false;
 }
 
@@ -165,13 +180,90 @@ static void sleepFor(uint64_t seconds, const char *why) {
   esp_deep_sleep_start();
 }
 
+// WiFi setup portal: when no known network can be joined, stand up an
+// access point with a captive page for a few minutes so a new network
+// can be typed in from a phone. Credentials go to NVS flash, never the
+// repo, and the saved network is tried first at every wake.
+static const char SETUP_AP_NAME[] = "Tylendar";
+static const char SETUP_AP_PASSWORD[] = "tylendar"; // WPA2 minimum is 8 chars
+static const uint32_t SETUP_PORTAL_MS = 3 * 60000UL;
+
+static const char SETUP_PAGE[] =
+    "<!doctype html><meta name=viewport content='width=device-width,initial-scale=1'>"
+    "<title>Tylendar WiFi setup</title>"
+    "<style>body{font-family:sans-serif;max-width:320px;margin:40px auto;padding:0 16px}"
+    "input,button{width:100%;font-size:16px;padding:10px;margin:6px 0;box-sizing:border-box}</style>"
+    "<h2>Tylendar WiFi setup</h2>"
+    "<p>2.4GHz networks with an ordinary password only.</p>"
+    "<form method=post action=/save>"
+    "<input name=ssid maxlength=32 placeholder='Network name' required>"
+    "<input name=pass maxlength=64 placeholder='Password (blank if open)' type=password>"
+    "<button>Save and restart</button></form>";
+
+static void runSetupPortal() {
+  WiFi.mode(WIFI_AP);
+  if (!WiFi.softAP(SETUP_AP_NAME, SETUP_AP_PASSWORD)) {
+    Serial.println("Setup: AP failed to start");
+    return;
+  }
+  DNSServer dns;
+  dns.start(53, "*", WiFi.softAPIP());
+  WebServer server(80);
+  bool saved = false;
+
+  server.on("/", HTTP_GET, [&server]() {
+    server.send(200, "text/html", SETUP_PAGE);
+  });
+  server.on("/save", HTTP_POST, [&server, &saved]() {
+    String ssid = server.arg("ssid");
+    String pass = server.arg("pass");
+    if (ssid.length() == 0 || ssid.length() > 32 || pass.length() > 64) {
+      server.send(400, "text/plain", "Network name must be 1 to 32 chars, password up to 64.");
+      return;
+    }
+    Preferences prefs;
+    prefs.begin("tylendar", false);
+    prefs.putString("ssid", ssid);
+    prefs.putString("pass", pass);
+    prefs.end();
+    server.send(200, "text/html",
+                "<h2>Saved</h2><p>Tylendar is restarting and will join that network.</p>");
+    saved = true;
+  });
+  // Any other URL redirects home, which is also what makes phones pop
+  // the captive portal page on join.
+  server.onNotFound([&server]() {
+    server.sendHeader("Location", String("http://") + WiFi.softAPIP().toString() + "/");
+    server.send(302, "text/plain", "");
+  });
+  server.begin();
+  Serial.printf("Setup: no known WiFi, AP '%s' up for %lu minutes\n",
+                SETUP_AP_NAME, (unsigned long)(SETUP_PORTAL_MS / 60000UL));
+
+  uint32_t start = millis();
+  while (millis() - start < SETUP_PORTAL_MS) {
+    dns.processNextRequest();
+    server.handleClient();
+    if (saved) {
+      delay(1000); // let the confirmation page reach the phone
+      Serial.println("Setup: credentials saved, restarting");
+      ESP.restart();
+    }
+    delay(2);
+  }
+  Serial.println("Setup: nobody configured anything");
+}
+
 void setup() {
   Serial.begin(115200);
   delay(200);
   Serial.println("\nTylendar waking up");
   epdPinsBegin();
 
-  if (!connectWifi()) sleepFor(RETRY_MINUTES * 60ULL, "wifi failed");
+  if (!connectWifi()) {
+    runSetupPortal();
+    sleepFor(RETRY_MINUTES * 60ULL, "wifi failed");
+  }
   bool haveTime = syncClock();
   bool displayed = fetchAndDisplay();
 

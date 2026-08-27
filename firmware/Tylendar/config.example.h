@@ -4,6 +4,12 @@
 // between home and work without reflashing. One {ssid, password} pair
 // per line. 2.4GHz networks with an ordinary password only: corporate
 // login networks (802.1X) and captive portals will not work.
+//
+// If none of these can be joined, the board opens its own access point
+// "Tylendar" (password "tylendar") for 3 minutes with a setup page
+// where a new network can be typed in from a phone. That network is
+// saved to the board's flash and tried first at every wake, so the
+// list below is just the starting set.
 #define WIFI_NETWORKS \
   { \
     {"YOUR_HOME_SSID", "YOUR_HOME_PASSWORD"}, \

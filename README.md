@@ -132,6 +132,19 @@ factory tuned booster and waveform values for this exact film.
 The sketch never refreshes a partial download. If WiFi or the download
 fails it leaves the previous image on screen and retries in an hour.
 
+### Changing WiFi without reflashing
+
+If the board cannot join any network from `config.h`, it opens its own
+WiFi access point named `Tylendar` (password `tylendar`) for 3 minutes
+before going back to sleep. Join it from a phone and a setup page pops
+up (or browse to http://192.168.4.1) where you type the new network
+name and password. They are saved to the board's flash, never to this
+repo, and that network is tried first at every wake from then on.
+
+So when your WiFi changes: power cycle the frame, wait a couple of
+minutes while it fails through the old list, then look for the
+`Tylendar` network on your phone.
+
 ## Credits
 
 Lunar calendar math by [lunar-python](https://github.com/6tail/lunar-python)
