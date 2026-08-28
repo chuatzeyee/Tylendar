@@ -77,8 +77,10 @@ docs/        Flashing guide for macOS, hardware assembly guide
 ## Changing settings from a phone
 
 The portal at https://chuatzeyee.github.io/Tylendar/ shows the current
-page, the render status, and the next wake, and lets you change the
-page mode, the hotspot label, or force a render. It is a static page
+page, the render status, and the next wake, and lets you pick which
+page the frame shows (almanac, poem, character, landscape, weather,
+month, or year), change the page mode, the hotspot label, or force a
+render. It is a static page
 served by GitHub Pages (source in `portal/`), locked behind a fine
 grained personal access token that you create once (Contents and
 Actions, read and write, this repo only): the page stays blank until
@@ -102,6 +104,16 @@ with your GitHub login (and 2FA) as the front door:
   render only; scheduled renders go back to following settings.json.
 - Change the calendar feed: repo Settings, "Secrets and variables",
   "Actions", update `ICS_URL`, then run the workflow once.
+
+### Pages
+
+The frame can show more than the almanac. Switch pages from the portal,
+or set `"page"` in
+[generator/settings.json](generator/settings.json) to one of `almanac`
+(the default), `poem`, `character`, `landscape`, `weather`, `month`, or
+`year`. The next scheduled render picks it up, or force one from the
+Actions tab. In this version every page other than the almanac always
+renders light; dark mode stays an almanac only feature.
 
 ## Renderer
 

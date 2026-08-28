@@ -9,8 +9,11 @@ Outputs:
   output/tylendar.bin  packed panel data, 153600 bytes, 2 bits per pixel,
                        4 pixels per byte MSB first, native 960x640 rows,
                        00 black, 01 white, 10 yellow, 11 red
+
+Set the OUT_DIR environment variable to write both files elsewhere.
 """
 
+import importlib
 import json
 import os
 import sys
@@ -37,7 +40,7 @@ def to_traditional(value):
     return value
 
 ROOT = Path(__file__).resolve().parent
-OUT = ROOT.parent / "output"
+OUT = Path(os.environ.get("OUT_DIR", "").strip() or ROOT.parent / "output")
 
 W, H = 640, 960
 MARGIN = 52
@@ -65,6 +68,7 @@ def load_settings():
 
 SETTINGS = load_settings()
 HOTSPOT = str(SETTINGS.get("hotspot") or "").strip() or "TyBatan"
+PAGES = ("almanac", "poem", "character", "landscape", "weather", "month", "year")
 
 BLACK = (12, 12, 12)
 WHITE = (255, 255, 255)
@@ -433,6 +437,35 @@ def render(d, dark=False):
     return img
 
 
+def pick_page():
+    """Which page to render: the PAGE environment variable (one shot,
+    for testing) beats "page" in settings.json. Unknown values fall
+    back to the almanac so a bad edit never blanks the wall."""
+    page = (os.environ.get("PAGE", "").strip()
+            or str(SETTINGS.get("page", "")).strip()).lower()
+    if page in PAGES or not page:
+        return page or "almanac"
+    print(f"warning: unknown page {page!r}, using almanac", file=sys.stderr)
+    return "almanac"
+
+
+def render_page(page, d, dark):
+    """Non-almanac pages live in pages/<name>.py, each exposing
+    render(date, hl, settings) -> Image, imported lazily so a missing
+    or broken page module can never kill the render; any failure falls
+    back to the almanac. Non-almanac pages always render light."""
+    if page != "almanac":
+        try:
+            if str(ROOT) not in sys.path:
+                sys.path.insert(0, str(ROOT))
+            module = importlib.import_module(f"pages.{page}")
+            return module.render(d, huangli(d), SETTINGS), page
+        except Exception as e:
+            print(f"warning: page {page} failed ({e}), using almanac",
+                  file=sys.stderr)
+    return render(d, dark), "almanac"
+
+
 def pack(img):
     """Portrait 640x960 to native 960x640 2bpp stream."""
     native = img.transpose(Image.ROTATE_90 if FPC_AT_BOTTOM else Image.ROTATE_270)
@@ -467,11 +500,11 @@ def main():
         dark = mode_setting == "dark"
     else:
         dark = now.hour >= 18
-    img = render(d, dark)
-    OUT.mkdir(exist_ok=True)
+    img, page = render_page(pick_page(), d, dark)
+    OUT.mkdir(parents=True, exist_ok=True)
     img.save(OUT / "preview.png")
     (OUT / "tylendar.bin").write_bytes(pack(img))
-    mode = "dark" if dark else "light"
+    mode = ("dark" if dark else "light") if page == "almanac" else page
     print(f"rendered {d} ({mode}) -> {OUT / 'tylendar.bin'} ({(OUT / 'tylendar.bin').stat().st_size} bytes)")
 
 
