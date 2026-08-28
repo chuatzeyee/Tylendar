@@ -504,7 +504,11 @@ async function gh(path, opts = {}) {
     const scope = path.startsWith("/actions/") ? "Actions" : "Contents";
     throw new Error("The token is missing the " + scope + " permission. Edit it on GitHub, grant " + scope + ", Read and write.");
   }
-  if (!res.ok) throw new Error("GitHub said " + res.status + ".");
+  if (!res.ok) {
+    const e = new Error("GitHub said " + res.status + ".");
+    e.status = res.status;
+    throw e;
+  }
   return res.status === 204 ? null : res.json();
 }
 
@@ -624,6 +628,32 @@ async function needToken() {
   return false;
 }
 
+/* Commit settings.json, rereading content and sha first so the other
+   keys survive. The render bot pushes its own commit within seconds of
+   every settings commit, and a PUT that races that push gets a 409
+   even with a fresh sha, so on 409 reread and retry instead of
+   surfacing the error. */
+async function putSettings(message, mutate) {
+  for (let attempt = 0; ; attempt++) {
+    const file = await gh("/contents/" + SETTINGS_PATH + "?ref=main");
+    settingsSha = file.sha;
+    const parsed = JSON.parse(b64ToUtf8(file.content));
+    const s = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+    const body = JSON.stringify(mutate(s), null, 2) + "\n";
+    try {
+      const put = await gh("/contents/" + SETTINGS_PATH, {
+        method: "PUT",
+        body: JSON.stringify({ message, content: utf8ToB64(body), sha: settingsSha }),
+      });
+      settingsSha = put.content.sha;
+      return;
+    } catch (e) {
+      if (e.status !== 409 || attempt >= 2) throw e;
+      await new Promise((r) => setTimeout(r, 1000 + 1000 * attempt));
+    }
+  }
+}
+
 async function saveSettings() {
   const status = $("save-status");
   status.classList.remove("err");
@@ -640,20 +670,8 @@ async function saveSettings() {
   status.textContent = "Saving";
   try {
     const prevId = await refreshPanelMeta();
-    if (settingsSha === null) {
-      const file = await gh("/contents/" + SETTINGS_PATH + "?ref=main");
-      settingsSha = file.sha;
-    }
-    const body = JSON.stringify({ hotspot, mode, page: currentPage }, null, 2) + "\n";
-    const put = await gh("/contents/" + SETTINGS_PATH, {
-      method: "PUT",
-      body: JSON.stringify({
-        message: "portal: update settings",
-        content: utf8ToB64(body),
-        sha: settingsSha,
-      }),
-    });
-    settingsSha = put.content.sha;
+    await putSettings("portal: update settings",
+      (s) => ({ ...s, hotspot, mode, page: currentPage }));
     status.textContent = "Saved. Rendering";
     watchRender(prevId, status);
   } catch (e) {
@@ -699,20 +717,8 @@ async function setPage(value) {
   status.textContent = "Saving";
   try {
     const prevId = await refreshPanelMeta();
-    const file = await gh("/contents/" + SETTINGS_PATH + "?ref=main");
-    settingsSha = file.sha;
-    const parsed = JSON.parse(b64ToUtf8(file.content));
-    const s = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
-    const body = JSON.stringify({ ...s, page: value }, null, 2) + "\n";
-    const put = await gh("/contents/" + SETTINGS_PATH, {
-      method: "PUT",
-      body: JSON.stringify({
-        message: "portal: switch page to " + value,
-        content: utf8ToB64(body),
-        sha: settingsSha,
-      }),
-    });
-    settingsSha = put.content.sha;
+    await putSettings("portal: switch page to " + value,
+      (s) => ({ ...s, page: value }));
     currentPage = value;
     layoutPageTiles();
     status.textContent = "Saved. Rendering";
