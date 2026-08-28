@@ -83,6 +83,74 @@
   .seg label:has(input:checked) { background: var(--ink); color: var(--paper); }
   .seg label:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: -2px; }
 
+  /* Page picker: tiny page thumbnails, the current one on top */
+  .group-label {
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--faint);
+    margin: 20px 0 10px;
+  }
+  .tiles {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    align-items: stretch;
+  }
+  .tile {
+    position: relative;
+    display: flex; align-items: center; gap: 11px;
+    padding: 10px;
+    border: 1px solid var(--hairline);
+    background: var(--card);
+    cursor: pointer; user-select: none;
+  }
+  .tile input { position: absolute; opacity: 0; pointer-events: none; }
+  .tile:has(input:checked) {
+    border-color: var(--red);
+    outline: 1px solid var(--red);
+    outline-offset: 2px;
+  }
+  .tile:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: -2px; }
+  .tile:has(input:disabled) { opacity: 0.55; cursor: default; }
+  .tile.now {
+    padding: 12px 14px 12px 10px; gap: 14px;
+    background: rgba(186, 32, 41, 0.035);
+  }
+  .tile.now .thumb { width: 52px; height: 78px; }
+  .tile.now .names .zh { font-size: 22px; }
+  .badge {
+    display: none;
+    margin-left: auto; align-self: center; flex: 0 0 auto;
+    background: var(--red); color: #fff;
+    font-size: 9.5px; font-weight: 650; letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 4px 6px 3px 8px; border-radius: 1px;
+  }
+  .tile.now .badge { display: block; }
+
+  .thumb {
+    flex: 0 0 auto; display: block;
+    width: 40px; height: 60px;
+    background: #fff;
+    border: 1px solid var(--hairline);
+  }
+  .thumb .hl   { stroke: #1a1a1a; stroke-opacity: 0.8; stroke-width: 1; fill: none; }
+  .thumb .hl2  { stroke: #1a1a1a; stroke-opacity: 0.3; stroke-width: 1; fill: none; }
+  .thumb .ring { stroke: #1a1a1a; stroke-opacity: 0.85; stroke-width: 3.4; fill: none; }
+  .thumb .red  { fill: var(--red); }
+  .thumb .chip { fill: var(--yellow); }
+  .thumb .ink  { fill: #1a1a1a; fill-opacity: 0.85; }
+  .thumb .ink2 { fill: #1a1a1a; fill-opacity: 0.35; }
+  .thumb .bar  { fill: #1a1a1a; fill-opacity: 0.55; }
+  .thumb .dotf { fill: #1a1a1a; fill-opacity: 0.8; }
+  .thumb .doto { fill: none; stroke: #1a1a1a; stroke-opacity: 0.45; stroke-width: 1; }
+
+  .names { display: flex; flex-direction: column; min-width: 0; }
+  .names .zh { font-size: 17px; font-weight: 550; line-height: 1.25; }
+  .names .en {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+    font-variant: small-caps; text-transform: lowercase;
+    color: var(--faint); margin-top: 2px;
+  }
+  .tile:has(input:checked) .names .zh { color: var(--red); }
+
   .field { margin-top: 16px; }
   .field > label, .field-label { display: block; font-size: 14px; font-weight: 550; margin-bottom: 6px; }
   input[type=text], input[type=password] {
@@ -175,6 +243,156 @@
       <div class="state" id="render-state">Checking</div>
       <div class="wake" id="wake-line"></div>
     </div>
+  </section>
+
+  <section>
+    <h2>Page</h2>
+    <div id="page-radios" role="radiogroup" aria-label="Page shown on the frame">
+      <div id="page-now">
+
+        <label class="tile now">
+          <input type="radio" name="page" value="almanac" checked>
+          <svg class="thumb" viewBox="0 0 40 60" aria-hidden="true">
+            <line class="hl" x1="6" y1="7.5" x2="34" y2="7.5"/>
+            <line class="hl" x1="8.5" y1="13" x2="8.5" y2="30"/>
+            <line class="hl" x1="31.5" y1="13" x2="31.5" y2="30"/>
+            <rect class="hl" x="13.5" y="13.5" width="13" height="16"/>
+            <rect class="ink" x="18" y="17" width="4" height="9"/>
+            <circle class="red" cx="20" cy="37" r="2.6"/>
+            <line class="hl" x1="8" y1="44.5" x2="32" y2="44.5"/>
+            <line class="hl" x1="11" y1="49.5" x2="29" y2="49.5"/>
+            <rect class="chip" x="15" y="53" width="10" height="3.5"/>
+          </svg>
+          <span class="names"><span class="zh">黃曆</span><span class="en">Almanac</span></span>
+          <span class="badge">Current</span>
+        </label>
+
+      </div>
+
+      <p class="group-label" aria-hidden="true">Switch to</p>
+
+      <div class="tiles" id="page-grid">
+
+        <label class="tile">
+          <input type="radio" name="page" value="poem">
+          <svg class="thumb" viewBox="0 0 40 60" aria-hidden="true">
+            <rect class="chip" x="32.5" y="6" width="4" height="37"/>
+            <line class="hl" x1="27" y1="9" x2="27" y2="43"/>
+            <line class="hl" x1="21.5" y1="9" x2="21.5" y2="33"/>
+            <line class="hl" x1="16" y1="9" x2="16" y2="39"/>
+            <line class="hl" x1="10.5" y1="9" x2="10.5" y2="27"/>
+            <rect class="red" x="8" y="47" width="5.5" height="5.5"/>
+          </svg>
+          <span class="names"><span class="zh">詩箋</span><span class="en">Poem</span></span>
+          <span class="badge">Current</span>
+        </label>
+
+        <label class="tile">
+          <input type="radio" name="page" value="character">
+          <svg class="thumb" viewBox="0 0 40 60" aria-hidden="true">
+            <rect class="hl" x="7.5" y="8.5" width="25" height="25"/>
+            <line class="hl2" x1="7.5" y1="21" x2="32.5" y2="21"/>
+            <line class="hl2" x1="20" y1="8.5" x2="20" y2="33.5"/>
+            <rect class="ink" x="11.5" y="19.5" width="17" height="3"/>
+            <rect class="ink" x="18.5" y="12" width="3" height="18"/>
+            <line class="hl" x1="12" y1="41.5" x2="28" y2="41.5"/>
+            <rect class="chip" x="9" y="47" width="8" height="3.5"/>
+            <circle class="red" cx="29.5" cy="48.5" r="2.4"/>
+          </svg>
+          <span class="names"><span class="zh">一字</span><span class="en">Character</span></span>
+          <span class="badge">Current</span>
+        </label>
+
+        <label class="tile">
+          <input type="radio" name="page" value="landscape">
+          <svg class="thumb" viewBox="0 0 40 60" aria-hidden="true">
+            <circle class="red" cx="29" cy="12" r="3"/>
+            <polygon class="ink2" points="12,36 23,20 34,36"/>
+            <polygon class="ink" points="4,36 14,16 24,36"/>
+            <line class="hl" x1="6" y1="42.5" x2="34" y2="42.5"/>
+            <line class="hl" x1="10" y1="47.5" x2="30" y2="47.5"/>
+            <rect class="chip" x="15" y="52" width="10" height="3.5"/>
+          </svg>
+          <span class="names"><span class="zh">山水</span><span class="en">Landscape</span></span>
+          <span class="badge">Current</span>
+        </label>
+
+        <label class="tile">
+          <input type="radio" name="page" value="weather">
+          <svg class="thumb" viewBox="0 0 40 60" aria-hidden="true">
+            <rect class="ink" x="9" y="9" width="4" height="17"/>
+            <circle class="ring" cx="24.5" cy="17.5" r="7"/>
+            <circle class="hl" cx="35" cy="9.5" r="1.8"/>
+            <rect class="bar" x="8" y="34" width="17" height="3"/>
+            <rect class="chip" x="8" y="40" width="24" height="3"/>
+            <rect class="bar" x="8" y="46" width="12" height="3"/>
+            <circle class="red" cx="30" cy="47.5" r="2.4"/>
+          </svg>
+          <span class="names"><span class="zh">天氣</span><span class="en">Weather</span></span>
+          <span class="badge">Current</span>
+        </label>
+
+        <label class="tile">
+          <input type="radio" name="page" value="month">
+          <svg class="thumb" viewBox="0 0 40 60" aria-hidden="true">
+            <rect class="chip" x="6" y="7" width="28" height="5"/>
+            <rect class="hl" x="6.5" y="16.5" width="27" height="32"/>
+            <line class="hl" x1="15.5" y1="16.5" x2="15.5" y2="48.5"/>
+            <line class="hl" x1="24.5" y1="16.5" x2="24.5" y2="48.5"/>
+            <line class="hl" x1="6.5" y1="24.5" x2="33.5" y2="24.5"/>
+            <line class="hl" x1="6.5" y1="32.5" x2="33.5" y2="32.5"/>
+            <line class="hl" x1="6.5" y1="40.5" x2="33.5" y2="40.5"/>
+            <circle class="red" cx="20" cy="36.5" r="2.2"/>
+            <line class="hl" x1="12" y1="53.5" x2="28" y2="53.5"/>
+          </svg>
+          <span class="names"><span class="zh">月曆</span><span class="en">Month</span></span>
+          <span class="badge">Current</span>
+        </label>
+
+        <label class="tile">
+          <input type="radio" name="page" value="year">
+          <svg class="thumb" viewBox="0 0 40 60" aria-hidden="true">
+            <circle class="dotf" cx="8.5" cy="9" r="1.4"/>
+            <circle class="dotf" cx="14.25" cy="9" r="1.4"/>
+            <circle class="dotf" cx="20" cy="9" r="1.4"/>
+            <circle class="dotf" cx="25.75" cy="9" r="1.4"/>
+            <circle class="dotf" cx="31.5" cy="9" r="1.4"/>
+            <circle class="dotf" cx="8.5" cy="15" r="1.4"/>
+            <circle class="dotf" cx="14.25" cy="15" r="1.4"/>
+            <circle class="dotf" cx="20" cy="15" r="1.4"/>
+            <circle class="dotf" cx="25.75" cy="15" r="1.4"/>
+            <circle class="dotf" cx="31.5" cy="15" r="1.4"/>
+            <circle class="dotf" cx="8.5" cy="21" r="1.4"/>
+            <circle class="dotf" cx="14.25" cy="21" r="1.4"/>
+            <circle class="dotf" cx="20" cy="21" r="1.4"/>
+            <circle class="dotf" cx="25.75" cy="21" r="1.4"/>
+            <circle class="dotf" cx="31.5" cy="21" r="1.4"/>
+            <circle class="red" cx="8.5" cy="27" r="1.8"/>
+            <circle class="doto" cx="14.25" cy="27" r="1.4"/>
+            <circle class="doto" cx="20" cy="27" r="1.4"/>
+            <circle class="doto" cx="25.75" cy="27" r="1.4"/>
+            <circle class="doto" cx="31.5" cy="27" r="1.4"/>
+            <circle class="doto" cx="8.5" cy="33" r="1.4"/>
+            <circle class="doto" cx="14.25" cy="33" r="1.4"/>
+            <circle class="doto" cx="20" cy="33" r="1.4"/>
+            <circle class="doto" cx="25.75" cy="33" r="1.4"/>
+            <circle class="doto" cx="31.5" cy="33" r="1.4"/>
+            <circle class="doto" cx="8.5" cy="39" r="1.4"/>
+            <circle class="doto" cx="14.25" cy="39" r="1.4"/>
+            <circle class="doto" cx="20" cy="39" r="1.4"/>
+            <circle class="doto" cx="25.75" cy="39" r="1.4"/>
+            <circle class="doto" cx="31.5" cy="39" r="1.4"/>
+            <line class="hl" x1="9" y1="47.5" x2="31" y2="47.5"/>
+            <rect class="chip" x="15" y="52" width="10" height="3.5"/>
+          </svg>
+          <span class="names"><span class="zh">年墨</span><span class="en">Year</span></span>
+          <span class="badge">Current</span>
+        </label>
+
+      </div>
+    </div>
+    <p class="hint">Tap a page to switch. The frame picks it up at its next wake (00:20, 07:30, 13:00, 19:00), or straight away with the EN button.</p>
+    <div class="status" id="page-status" role="status"></div>
   </section>
 
   <section>
@@ -392,6 +610,8 @@ async function loadSettings() {
     const mode = ["auto", "light", "dark"].includes(s.mode) ? s.mode : "auto";
     document.querySelector('input[name=mode][value="' + mode + '"]').checked = true;
     $("hotspot").value = typeof s.hotspot === "string" ? s.hotspot : "";
+    currentPage = PAGES.includes(s.page) ? s.page : "almanac";
+    layoutPageTiles();
   } catch (e) {
     $("save-status").textContent = "Could not load settings (" + e.message + ")";
     $("save-status").classList.add("err");
@@ -424,7 +644,7 @@ async function saveSettings() {
       const file = await gh("/contents/" + SETTINGS_PATH + "?ref=main");
       settingsSha = file.sha;
     }
-    const body = JSON.stringify({ hotspot, mode }, null, 2) + "\n";
+    const body = JSON.stringify({ hotspot, mode, page: currentPage }, null, 2) + "\n";
     const put = await gh("/contents/" + SETTINGS_PATH, {
       method: "PUT",
       body: JSON.stringify({
@@ -442,6 +662,68 @@ async function saveSettings() {
     status.classList.add("err");
   } finally {
     btn.disabled = false;
+  }
+}
+
+/* ---------- page picker ---------- */
+
+const PAGES = ["almanac", "poem", "character", "landscape", "weather", "month", "year"];
+let currentPage = "almanac";
+
+/* Move the current page's tile into the "now showing" slot and the
+   rest into the grid, keeping the declared order. Also re-checks the
+   current tile, which reverts the radios after a failed switch. */
+function layoutPageTiles() {
+  PAGES.forEach((v) => {
+    const input = document.querySelector('input[name=page][value="' + v + '"]');
+    const tile = input.closest(".tile");
+    const now = v === currentPage;
+    tile.classList.toggle("now", now);
+    input.checked = now;
+    (now ? $("page-now") : $("page-grid")).appendChild(tile);
+  });
+}
+
+/* Commit "page" straight away, rereading settings.json first so the
+   other keys survive and the sha is fresh. */
+async function setPage(value) {
+  const status = $("page-status");
+  status.classList.remove("err");
+  if (!PAGES.includes(value)) return;
+  if (!(await needToken())) {
+    layoutPageTiles();
+    return;
+  }
+  const inputs = document.querySelectorAll("input[name=page]");
+  inputs.forEach((i) => { i.disabled = true; });
+  status.textContent = "Saving";
+  try {
+    const prevId = await refreshPanelMeta();
+    const file = await gh("/contents/" + SETTINGS_PATH + "?ref=main");
+    settingsSha = file.sha;
+    const parsed = JSON.parse(b64ToUtf8(file.content));
+    const s = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+    const body = JSON.stringify({ ...s, page: value }, null, 2) + "\n";
+    const put = await gh("/contents/" + SETTINGS_PATH, {
+      method: "PUT",
+      body: JSON.stringify({
+        message: "portal: switch page to " + value,
+        content: utf8ToB64(body),
+        sha: settingsSha,
+      }),
+    });
+    settingsSha = put.content.sha;
+    currentPage = value;
+    layoutPageTiles();
+    status.textContent = "Saved. Rendering";
+    watchRender(prevId, status);
+  } catch (e) {
+    settingsSha = null;
+    layoutPageTiles();
+    status.textContent = e.message;
+    status.classList.add("err");
+  } finally {
+    inputs.forEach((i) => { i.disabled = false; });
   }
 }
 
@@ -607,6 +889,9 @@ async function boot() {
 
 $("save").addEventListener("click", saveSettings);
 $("render").addEventListener("click", renderNow);
+$("page-radios").addEventListener("change", (e) => {
+  if (e.target.name === "page" && e.target.value !== currentPage) setPage(e.target.value);
+});
 $("tok-btn").addEventListener("click", openTokenDialog);
 $("tok-save").addEventListener("click", saveToken);
 $("tok-cancel").addEventListener("click", () => $("tok-dialog").close());
