@@ -44,4 +44,10 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add output/tylendar.bin output/preview.png
           git diff --cached --quiet || git commit -m "render: daily image"
-          git push
+          # The push can race a settings commit landing mid-run, so
+          # rebase and retry instead of failing the whole render.
+          for i in 1 2 3; do
+            git push && exit 0
+            git pull --rebase || exit 1
+          done
+          exit 1
