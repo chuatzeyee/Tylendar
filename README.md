@@ -8,7 +8,11 @@ It can also show other pages, picked from a phone: a Tang poem, a daily
 character, an ink landscape, live Singapore weather, a month calendar,
 or a year progress chart. See [Pages](#pages).
 
-![Preview](output/preview.png)
+What the frame is showing right now (updates four times a day):
+
+![Live preview](output/preview.png)
+
+Previews of every page are in [Pages](#pages).
 
 ## How it works
 
@@ -133,6 +137,18 @@ render picks it up, or force one from the Actions tab.
   `ICS_URL` is set.
 - `year`: how far into the year today is, a waffle chart of the year's
   days with New Year, CNY, today, and Mid Autumn marked.
+
+| almanac | poem | character |
+| --- | --- | --- |
+| ![Almanac page](docs/previews/almanac.png) | ![Poem page](docs/previews/poem.png) | ![Character page](docs/previews/character.png) |
+| **landscape** | **weather** | **month** |
+| ![Landscape page](docs/previews/landscape.png) | ![Weather page](docs/previews/weather.png) | ![Month page](docs/previews/month.png) |
+| **year** | **almanac, dark weekday** | **almanac, dark weekend** |
+| ![Year page](docs/previews/year.png) | ![Dark almanac, black](docs/previews/almanac-dark.png) | ![Dark almanac, red](docs/previews/almanac-dark-weekend.png) |
+
+Previews rendered for 2026-08-29 (dark weekday for 2026-08-28) with the
+`PAGE`, `DARK`, and `OUT_DIR` variables described in
+[Renderer](#renderer) below.
 
 Page modules live in `generator/pages/`, one file per page, with their
 data files in `generator/data/`. A page that fails to render (say the
