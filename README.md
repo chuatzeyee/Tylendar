@@ -4,6 +4,9 @@ A wall mounted daily Chinese almanac (huangli) on a 10.2 inch four color
 e-paper panel, framed in an IKEA RODALM. Every night at midnight it tears
 off yesterday and shows the new day: Gregorian date, lunar date, ganzhi
 pillars, zodiac year, solar terms, festivals, and the daily yi and ji.
+It can also show other pages, picked from a phone: a Tang poem, a daily
+character, an ink landscape, live Singapore weather, a month calendar,
+or a year progress chart. See [Pages](#pages).
 
 ![Preview](output/preview.png)
 
@@ -36,7 +39,7 @@ midnight refresh returns to the light page for the new day.
 ## Repo layout
 
 ```
-generator/   Python renderer, fonts, run: python3 generator/generate.py
+generator/   Python renderer, page modules, page data, fonts
 firmware/    Arduino sketch for the ESP32-L, panel driver included
 output/      Rendered binary and preview, updated four times a day
 portal/      Settings portal, served at chuatzeyee.github.io/Tylendar
@@ -99,6 +102,7 @@ with your GitHub login (and 2FA) as the front door:
     Keep it to plain ASCII, the bundled Latin font has no CJK glyphs.
   - `"mode"`: `"auto"` (light by day, dark from 19:00), or pin it with
     `"dark"` or `"light"` until you change it back.
+  - `"page"`: which page the frame shows, see [Pages](#pages) below.
 - Force a refresh now: repo Actions tab, "Render daily calendar", "Run
   workflow". The mode dropdown there forces light or dark for that one
   render only; scheduled renders go back to following settings.json.
@@ -109,11 +113,32 @@ with your GitHub login (and 2FA) as the front door:
 
 The frame can show more than the almanac. Switch pages from the portal,
 or set `"page"` in
-[generator/settings.json](generator/settings.json) to one of `almanac`
-(the default), `poem`, `character`, `landscape`, `weather`, `month`, or
-`year`. The next scheduled render picks it up, or force one from the
-Actions tab. In this version every page other than the almanac always
-renders light; dark mode stays an almanac only feature.
+[generator/settings.json](generator/settings.json). The next scheduled
+render picks it up, or force one from the Actions tab.
+
+- `almanac`: the daily huangli described above, the default, and the
+  only page with a dark mode.
+- `poem`: a Tang poem a day, set in ruled vertical columns read right
+  to left, from a pool of 135 five character poems curated out of the
+  Three Hundred Tang Poems.
+- `character`: one large character a day, with pinyin and tone, the
+  meaning, two compound words, the radical, and the stroke count.
+- `landscape`: a shanshui ink landscape composed from the date, with
+  the lunar day stamped under the seal, so no two days look the same.
+- `weather`: live Singapore weather fetched at render time, from NEA
+  (day high, night low, forecast, UV, PM2.5) and Open-Meteo (chance of
+  rain, next 12 hours).
+- `month`: a month calendar with lunar dates, gazetted Singapore public
+  holidays, solar terms, festival chips, and calendar event dots when
+  `ICS_URL` is set.
+- `year`: how far into the year today is, a waffle chart of the year's
+  days with New Year, CNY, today, and Mid Autumn marked.
+
+Page modules live in `generator/pages/`, one file per page, with their
+data files in `generator/data/`. A page that fails to render (say the
+weather APIs are down) falls back to the almanac instead of leaving the
+wall blank. Every page other than the almanac always renders light;
+dark mode stays an almanac only feature.
 
 ## Renderer
 
@@ -124,10 +149,13 @@ reserved for Sundays, festivals, and the year seal. Yellow is used
 sparingly, only for the solar term tag, since large yellow fields render
 muddy on this film.
 
-Render any date to check the layout:
+Render any date to check the layout. `PAGE` previews any page without
+touching settings.json, and `OUT_DIR` writes the files somewhere other
+than `output/`:
 
 ```
 python3 generator/generate.py 2027-02-06
+PAGE=poem OUT_DIR=/tmp/check python3 generator/generate.py 2027-02-06
 ```
 
 The packed format matches the panel: rows of 960 pixels, 4 pixels per
