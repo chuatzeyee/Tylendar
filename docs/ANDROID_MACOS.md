@@ -130,10 +130,14 @@ you which one.
 
 ## 7. Using it
 
-- Tapping a page or mode flips the preview instantly to a committed
-  thumbnail (caption reads PREVIEW), commits the change, and the GitHub
-  render starts. About two minutes later the preview swaps to the real
-  freshly rendered frame image (caption reads LIVE).
+- Swipe the carousel to browse the seven pages; the one the frame is
+  showing wears a red seal. Tap SET AS FRAME PAGE to commit: the
+  preview flips instantly to a committed thumbnail (caption reads
+  PREVIEW) and the GitHub render starts. About two minutes later the
+  preview swaps to the real freshly rendered frame image (caption
+  reads LIVE).
+- On the poem page, IN ENGLISH opens the full translation of today's
+  poem.
 - RENDER NOW re-renders without changing anything, in auto, light, or
   dark.
 - The frame itself picks changes up at its next scheduled wake (shown in

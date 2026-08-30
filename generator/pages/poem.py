@@ -105,4 +105,11 @@ def render(d, hl, settings):
     else:
         draw_text(img, (R, 904), poem["author"], serif(20, 500), BLACK,
                   anchor="rs", tracking=4)
+
+    # One line of English under the footer: the poem's gist, not a
+    # translation, kept to 52 chars so it always clears the silk band.
+    # Canela has no ASCII apostrophe, only U+2019; data stays ASCII.
+    gist = poem["gist"].replace("'", "\u2019")
+    draw_text(img, ((L + R) // 2, 938), gist, latin(15, 600), BLACK,
+              anchor="ms", tracking=1)
     return img

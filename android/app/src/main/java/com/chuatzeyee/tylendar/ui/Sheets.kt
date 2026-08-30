@@ -1,8 +1,12 @@
 package com.chuatzeyee.tylendar.ui
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -54,6 +58,44 @@ fun HotspotSheet(initial: String, onSave: (String) -> Boolean, onDismiss: () -> 
             }
             Chip("SAVE", modifier = Modifier.padding(top = 16.dp, bottom = 24.dp)) {
                 if (onSave(value)) onDismiss() else rejected = true
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PoemSheet(p: com.chuatzeyee.tylendar.Poem, onDismiss: () -> Unit) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Paper) {
+        Column(
+            Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(start = 24.dp, end = 24.dp, bottom = 32.dp)
+        ) {
+            Text("TODAY'S POEM", style = LabelStyle, color = Seal)
+            Text(
+                p.titleEn ?: p.title,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+            Text(
+                "${p.title}  ${p.author}",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+            if (p.authorRoman.isNotEmpty()) {
+                Text(
+                    if (p.authorDates.isEmpty()) p.authorRoman
+                    else "${p.authorRoman}, ${p.authorDates}",
+                    style = LabelStyle,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+            p.english?.let { lines ->
+                Spacer(Modifier.height(12.dp))
+                lines.forEach { line ->
+                    Text(line, style = MaterialTheme.typography.bodyLarge)
+                }
             }
         }
     }

@@ -57,6 +57,11 @@
     text-transform: uppercase; margin-bottom: 14px; color: var(--faint);
   }
 
+  #poem-title { font-size: 22px; font-weight: 420; line-height: 1.2; }
+  #poem-byline { color: var(--faint); font-size: 13px; margin: 4px 0 12px; }
+  #poem-lines p { margin: 0; line-height: 1.6; }
+  #poem-gist { color: var(--faint); font-size: 13px; font-style: italic; margin-top: 12px; }
+
   /* Preview in a tiny RODALM: black frame, white mat */
   .frame {
     width: 172px; margin: 2px auto 14px; background: #fff;
@@ -243,6 +248,14 @@
       <div class="state" id="render-state">Checking</div>
       <div class="wake" id="wake-line"></div>
     </div>
+  </section>
+
+  <section id="poem-card" hidden>
+    <h2>Today's poem</h2>
+    <div id="poem-title"></div>
+    <div id="poem-byline"></div>
+    <div id="poem-lines"></div>
+    <div id="poem-gist"></div>
   </section>
 
   <section>
@@ -700,6 +713,46 @@ function layoutPageTiles() {
     input.checked = now;
     (now ? $("page-now") : $("page-grid")).appendChild(tile);
   });
+  updatePoemCard();
+}
+
+/* ---------- today's poem, in English ---------- */
+
+let poemLoaded = false;
+
+function updatePoemCard() {
+  const show = currentPage === "poem";
+  if (show && !poemLoaded) loadPoem();
+  $("poem-card").hidden = !show || !poemLoaded;
+}
+
+/* The generator picks POEMS[toordinal(today) % count]; mirror it.
+   719163 is date(1970, 1, 1).toordinal(). */
+async function loadPoem() {
+  try {
+    const res = await fetch(RAW + "/generator/data/poems.json");
+    if (!res.ok) return;
+    const poems = await res.json();
+    const sgt = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Singapore" });
+    const ordinal = Math.round(Date.parse(sgt + "T00:00:00Z") / 86400000) + 719163;
+    const p = poems[ordinal % poems.length];
+    $("poem-title").textContent = p.title_en || p.title;
+    $("poem-byline").textContent = p.title + "  " + p.author +
+      (p.author_roman ? "  (" + p.author_roman +
+        (p.author_dates ? ", " + p.author_dates : "") + ")" : "");
+    const box = $("poem-lines");
+    box.textContent = "";
+    (p.english || []).forEach((line) => {
+      const el = document.createElement("p");
+      el.textContent = line;
+      box.appendChild(el);
+    });
+    $("poem-gist").textContent = p.gist || "";
+    poemLoaded = true;
+    updatePoemCard();
+  } catch {
+    /* The card is decorative; a failed fetch just leaves it hidden. */
+  }
 }
 
 /* Commit "page" straight away, rereading settings.json first so the
