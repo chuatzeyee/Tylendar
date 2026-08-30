@@ -259,6 +259,4 @@ def render(d, hl, settings):
         f_foot = DuoFont(latin(20, 450), serif(21, 500), LATIN_COVER)
         draw_text(img, (L + text_width(nm_name, f_next) + 16, FOOT_BASE), nm_line,
                   f_foot, BLACK, anchor="ls", tracking=1)
-    draw_text(img, (R, FOOT_BASE), "SINGAPORE", latin(15, 600), BLACK,
-              anchor="rs", tracking=3)
     return img

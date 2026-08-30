@@ -76,7 +76,7 @@ def render(d, hl, settings):
     # 650: any smaller and the 3 loses its top curve in the threshold
     # mask, so 365 reads 565.
     f_brow = latin(17, 650)
-    brow = f"{WEEKDAY_EN[d.weekday()][:3]} {d.day} {hl['month_abbr'].upper()}, SINGAPORE"
+    brow = f"{WEEKDAY_EN[d.weekday()][:3]} {d.day} {hl['month_abbr'].upper()}"
     draw_text(img, (L, 44), brow, f_brow, BLACK, anchor="ls", tracking=2)
     draw_text(img, (R, 44), f"DAY {today} OF {total}", f_brow, BLACK,
               anchor="rs", tracking=2)

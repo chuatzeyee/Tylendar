@@ -393,11 +393,7 @@ private fun GhostChar(pager: PagerState, modifier: Modifier = Modifier) {
 
 @Composable
 private fun Eyebrow(text: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.width(12.dp).height(1.dp).background(Brass))
-        Spacer(Modifier.width(4.dp))
-        Text(text, style = LabelStyle, color = InkFaint)
-    }
+    Text(text, style = LabelStyle, color = InkFaint)
 }
 
 @Composable
