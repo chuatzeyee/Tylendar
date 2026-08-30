@@ -12,6 +12,8 @@ from datetime import date
 from PIL import Image, ImageDraw, ImageFont
 from lunar_python import Lunar
 
+from pages.month import holidays
+
 from generate import (W, H, BLACK, WHITE, RED, YELLOW, draw_text, text_width,
                       latin, serif, DuoFont, LATIN, LATIN_COVER,
                       TEXT_THRESHOLD, MONTH_ABBR, WEEKDAY_EN)
@@ -68,6 +70,7 @@ def render(d, hl, settings):
     total = date(d.year, 12, 31).timetuple().tm_yday
     today = d.timetuple().tm_yday
     fests = milestones(d.year)
+    hols = holidays()
 
     img = Image.new("RGB", (W, H), WHITE)
     dr = ImageDraw.Draw(img)
@@ -106,6 +109,8 @@ def render(d, hl, settings):
 
     # The grid, flush right; the label rail owns the left half.
     fest_days = {doy for doy, _ in fests}
+    fest_days |= {date.fromisoformat(k).timetuple().tm_yday
+                  for k in hols if int(k[:4]) == d.year}
     for n in range(1, total + 1):
         x, y = cell_xy(n)
         box = [x, y, x + CELL - 1, y + CELL - 1]
@@ -145,7 +150,14 @@ def render(d, hl, settings):
     draw_text(img, (xe + CELL + 12, ye + CELL - 3), "31 DEC", f_brow, BLACK,
               anchor="ls", tracking=2)
 
-    # 20px at 450: at 19px the small-opsz g loses its lower bowl.
-    draw_text(img, ((L + R) / 2, 934), "The days are long but the years are short.",
-              fraunces(20, 450, opsz=9), BLACK, anchor="ms")
+    # Countdown to the next gazetted public holiday. 20px at 450: at
+    # 19px the small-opsz glyphs clog in the threshold mask.
+    future = sorted(k for k in hols if date.fromisoformat(k) > d)
+    if future:
+        nd = date.fromisoformat(future[0])
+        n = (nd - d).days
+        name = hols[future[0]].replace(" (Observed)", "").upper()
+        line = f"{n} {'DAY' if n == 1 else 'DAYS'} TO {name}"
+        draw_text(img, ((L + R) / 2, 934), line,
+                  fraunces(20, 450, opsz=9), BLACK, anchor="ms")
     return img

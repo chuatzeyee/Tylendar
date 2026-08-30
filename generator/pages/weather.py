@@ -231,8 +231,6 @@ def render(d, hl, settings):
     def hairline(y):
         draw.rectangle([LEFT, y, RIGHT, y + 1], fill=BLACK)
 
-    f_eyebrow = latin(16, 600, opsz=9)
-    draw_text(img, (LEFT, 44), "WEATHER", f_eyebrow, BLACK, anchor="ls", tracking=3)
     draw_text(img, (LEFT, 86), f"{hl['day']} {hl['month_abbr']} {hl['year']}",
               latin(48, 800), BLACK, anchor="lm")
     draw_text(img, (RIGHT, 70), hl["weekday_cn"], serif(24, 500), BLACK,

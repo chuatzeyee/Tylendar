@@ -147,7 +147,8 @@ render picks it up, or force one from the Actions tab.
   holidays, solar terms, festival chips, and calendar event dots when
   `ICS_URL` is set.
 - `year`: how far into the year today is, a waffle chart of the year's
-  days with New Year, CNY, today, and Mid Autumn marked.
+  days with today, the public holidays, and the major festivals marked,
+  and a countdown to the next holiday.
 
 | almanac | poem | character |
 | --- | --- | --- |
