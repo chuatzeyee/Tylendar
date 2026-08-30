@@ -29,6 +29,16 @@ class GithubException(message: String) : Exception(message)
 
 data class RenderRun(val status: String, val conclusion: String?, val createdAt: String)
 
+data class Poem(
+    val title: String,
+    val author: String,
+    val authorRoman: String,
+    val authorDates: String,
+    val lines: List<String>,
+    val titleEn: String?,
+    val english: List<String>?,
+)
+
 data class RepoSettings(val json: JsonObject, val sha: String) {
     val page get() = json["page"]?.jsonPrimitive?.contentOrNull ?: "almanac"
     val mode get() = json["mode"]?.jsonPrimitive?.contentOrNull ?: "auto"
@@ -154,6 +164,29 @@ class Github(private val token: () -> String?) {
             conclusion = run["conclusion"]?.jsonPrimitive?.contentOrNull,
             createdAt = run["created_at"]?.jsonPrimitive?.contentOrNull ?: "",
         )
+    }
+
+    /* Public raw file, no token needed. The generator picks the daily
+       poem as toordinal(today) % count; the caller replicates that. */
+    suspend fun poems(): List<Poem> {
+        val (code, body) = call(
+            Request.Builder().url("$RAW/generator/data/poems.json").build()
+        )
+        if (code !in 200..299) throw GithubException("Could not fetch poems, GitHub said $code.")
+        return json.parseToJsonElement(body).jsonArray.map { el ->
+            val o = el.jsonObject
+            fun text(k: String) = o[k]?.jsonPrimitive?.contentOrNull ?: ""
+            fun lines(k: String) = o[k]?.jsonArray?.map { it.jsonPrimitive.content }
+            Poem(
+                title = text("title"),
+                author = text("author"),
+                authorRoman = text("author_roman"),
+                authorDates = text("author_dates"),
+                lines = lines("lines") ?: emptyList(),
+                titleEn = o["title_en"]?.jsonPrimitive?.contentOrNull,
+                english = lines("english"),
+            )
+        }
     }
 
     suspend fun dispatchRender(mode: String) {

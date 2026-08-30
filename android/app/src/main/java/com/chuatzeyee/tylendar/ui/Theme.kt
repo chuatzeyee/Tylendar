@@ -19,11 +19,15 @@ val Paper = Color(0xFFFFFFFF)
 val Seal = Color(0xFFBA2029)
 val Gold = Color(0xFFECB70F)
 
-val Fraunces = FontFamily(Font(R.font.fraunces))
+val Canela = FontFamily(
+    Font(R.font.canela_regular, FontWeight.Normal),
+    Font(R.font.canela_medium, FontWeight.Medium),
+    Font(R.font.canela_bold, FontWeight.Bold),
+)
 
 /* Letterspaced caps, the portal's and the printed page's label voice. */
 val LabelStyle = TextStyle(
-    fontFamily = Fraunces,
+    fontFamily = Canela,
     fontSize = 12.sp,
     fontWeight = FontWeight.Medium,
     letterSpacing = 1.6.sp,
@@ -50,9 +54,9 @@ fun TylendarTheme(content: @Composable () -> Unit) {
             error = Seal,
         ),
         typography = Typography(
-            bodyLarge = TextStyle(fontFamily = Fraunces, fontSize = 16.sp),
-            bodyMedium = TextStyle(fontFamily = Fraunces, fontSize = 14.sp),
-            titleLarge = TextStyle(fontFamily = Fraunces, fontSize = 28.sp, fontWeight = FontWeight.SemiBold),
+            bodyLarge = TextStyle(fontFamily = Canela, fontSize = 16.sp),
+            bodyMedium = TextStyle(fontFamily = Canela, fontSize = 14.sp),
+            titleLarge = TextStyle(fontFamily = Canela, fontSize = 28.sp, fontWeight = FontWeight.Bold),
             labelLarge = LabelStyle,
         ),
         content = content,

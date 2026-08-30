@@ -53,6 +53,7 @@ import com.chuatzeyee.tylendar.Gate
 import com.chuatzeyee.tylendar.MODES
 import com.chuatzeyee.tylendar.OWNER
 import com.chuatzeyee.tylendar.PAGES
+import com.chuatzeyee.tylendar.Poem
 import com.chuatzeyee.tylendar.RAW
 import com.chuatzeyee.tylendar.REPO
 import kotlinx.coroutines.delay
@@ -243,6 +244,10 @@ private fun Home(vm: AppViewModel) {
             )
         }
 
+        if (s?.page == "poem") {
+            vm.poem?.let { PoemCard(it) }
+        }
+
         Label("PAGE")
         PAGES.chunked(3).forEach { row ->
             Row(
@@ -314,6 +319,42 @@ private fun Home(vm: AppViewModel) {
             onSave = vm::setHotspot,
             onDismiss = { showHotspot = false },
         )
+    }
+}
+
+@Composable
+private fun PoemCard(p: Poem) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp)
+            .border(1.dp, Ink)
+            .padding(14.dp)
+    ) {
+        Text("TODAY'S POEM", style = LabelStyle, color = Seal)
+        Text(
+            p.titleEn ?: p.title,
+            style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp),
+            modifier = Modifier.padding(top = 8.dp),
+        )
+        Text(
+            "${p.title}  ${p.author}",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(top = 2.dp),
+        )
+        if (p.authorRoman.isNotEmpty()) {
+            Text(
+                if (p.authorDates.isEmpty()) p.authorRoman else "${p.authorRoman}, ${p.authorDates}",
+                style = LabelStyle.copy(fontSize = 10.sp),
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+        p.english?.let { lines ->
+            Spacer(Modifier.height(12.dp))
+            lines.forEach { line ->
+                Text(line, style = MaterialTheme.typography.bodyLarge)
+            }
+        }
     }
 }
 

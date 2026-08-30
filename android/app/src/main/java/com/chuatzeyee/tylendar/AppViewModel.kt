@@ -11,8 +11,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.Duration
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
+
+/* Difference between java.time epochDay and Python date.toordinal();
+   the generator picks the daily poem with toordinal(today) % count. */
+private const val EPOCH_ORDINAL = 719163L
 
 sealed interface Gate {
     data object Loading : Gate
@@ -41,6 +46,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var error by mutableStateOf<String?>(null)
     var previewStamp by mutableStateOf(System.currentTimeMillis())
+        private set
+    var poem by mutableStateOf<Poem?>(null)
         private set
 
     /* Snappy page switching: the moment a page is picked, the preview
@@ -117,6 +124,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 previewStamp = System.currentTimeMillis()
             } catch (e: Exception) {
                 error = e.message
+            }
+            if (poem == null) {
+                runCatching {
+                    val all = gh.poems()
+                    val ordinal = LocalDate.now(SGT).toEpochDay() + EPOCH_ORDINAL
+                    poem = all[(ordinal % all.size).toInt()]
+                }
             }
         }
     }
