@@ -38,8 +38,8 @@ val Canela = FontFamily(
 val WordmarkStyle = TextStyle(
     fontFamily = Canela,
     fontWeight = FontWeight.Medium,
-    fontSize = 15.sp,
-    letterSpacing = 6.sp,
+    fontSize = 20.sp,
+    letterSpacing = 0.5.sp,
     color = Ink,
 )
 
@@ -51,7 +51,7 @@ val LabelStyle = TextStyle(
     letterSpacing = 2.2.sp,
 )
 
-/* Plaque text: buttons, chips, NO. 4 OF 7, ON VIEW. */
+/* Plaque text: buttons, chips, ON VIEW. */
 val MicroStyle = TextStyle(
     fontFamily = Canela,
     fontWeight = FontWeight.Medium,

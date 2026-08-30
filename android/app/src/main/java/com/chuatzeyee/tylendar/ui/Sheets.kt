@@ -7,6 +7,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,11 +33,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.chuatzeyee.tylendar.OWNER
 import com.chuatzeyee.tylendar.Poem
+import com.chuatzeyee.tylendar.REPO
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,6 +89,98 @@ fun HotspotSheet(initial: String, onSave: (String) -> Boolean, onDismiss: () -> 
             CommitButton("SAVE", modifier = Modifier.padding(top = 16.dp, bottom = 24.dp)) {
                 if (onSave(value)) onDismiss() else rejected = true
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsSheet(
+    hotspot: String,
+    onEditHotspot: () -> Unit,
+    onRemoveToken: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Mat,
+        dragHandle = {
+            Box(
+                Modifier.padding(vertical = 10.dp).width(28.dp).height(2.dp).background(Hairline)
+            )
+        },
+    ) {
+        Column(Modifier.padding(24.dp)) {
+            Text("SETTINGS", style = LabelStyle, color = InkFaint)
+            Spacer(Modifier.height(18.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Hotspot label", style = MaterialTheme.typography.bodyMedium)
+                    Text(hotspot, style = MicroStyle, color = InkFaint)
+                }
+                Chip("EDIT") {
+                    onDismiss()
+                    onEditHotspot()
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            Box(Modifier.fillMaxWidth().height(1.dp).background(Hairline))
+            Spacer(Modifier.height(16.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("GitHub token", style = MaterialTheme.typography.bodyMedium)
+                    Text("SET ON THIS PHONE", style = MicroStyle, color = InkFaint)
+                }
+                Chip("REMOVE", onClick = onRemoveToken)
+            }
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AboutSheet(onDismiss: () -> Unit) {
+    val uri = LocalUriHandler.current
+    val context = LocalContext.current
+    val version = remember {
+        runCatching {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        }.getOrNull().orEmpty()
+    }
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Mat,
+        dragHandle = {
+            Box(
+                Modifier.padding(vertical = 10.dp).width(28.dp).height(2.dp).background(Hairline)
+            )
+        },
+    ) {
+        Column(
+            Modifier.fillMaxWidth().padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text("Tylendar", style = WordmarkStyle)
+            if (version.isNotEmpty()) {
+                Spacer(Modifier.height(4.dp))
+                Text("VERSION $version", style = MicroStyle, color = InkFaint)
+            }
+            Spacer(Modifier.height(14.dp))
+            Text(
+                "Remote control for the Tylendar frame: a wall mounted daily " +
+                    "Chinese almanac on e-paper. Pick the page on view, switch " +
+                    "modes, or force a render; the frame picks changes up at " +
+                    "its next wake.",
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(18.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Chip("SOURCE ON GITHUB") { uri.openUri("https://github.com/$OWNER/$REPO") }
+                Chip("WEB PORTAL") { uri.openUri("https://$OWNER.github.io/$REPO/") }
+            }
+            Spacer(Modifier.height(24.dp))
         }
     }
 }

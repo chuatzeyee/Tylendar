@@ -254,10 +254,10 @@ internal fun Gallery(
                         )
                     }
                     Spacer(Modifier.height(2.dp))
-                    Row {
-                        Text("NO. ${i + 1} OF ${PAGES.size}", style = MicroStyle, color = InkFaint)
+                    /* Fixed height so the label card never jumps between
+                       the committed page and the rest. */
+                    Row(Modifier.height(14.dp)) {
                         if (i == committedIdx) {
-                            Spacer(Modifier.width(10.dp))
                             Text("ON VIEW", style = MicroStyle, color = Brass)
                             Spacer(Modifier.width(10.dp))
                             if (vm.previewIsLive) {

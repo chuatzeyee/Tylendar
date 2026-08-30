@@ -61,6 +61,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -120,7 +121,7 @@ fun App(vm: AppViewModel) {
 
 @Composable
 private fun Wordmark() {
-    Text("TYLENDAR", style = WordmarkStyle)
+    Text("Tylendar", style = WordmarkStyle)
 }
 
 @Composable
@@ -239,6 +240,8 @@ private fun Home(vm: AppViewModel) {
     val s = vm.settings
     var showHotspot by remember { mutableStateOf(false) }
     var showPoem by remember { mutableStateOf(false) }
+    var showAbout by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() }
     var wake by remember { mutableStateOf(vm.nextWake()) }
@@ -292,7 +295,7 @@ private fun Home(vm: AppViewModel) {
             val wide = maxWidth >= availH
             if (wide) {
                 Column(Modifier.fillMaxSize()) {
-                    HeaderRow(vm)
+                    HeaderRow({ showAbout = true }, { showSettings = true })
                     Spacer(Modifier.height(12.dp))
                     Row(
                         Modifier.weight(1f),
@@ -316,7 +319,7 @@ private fun Home(vm: AppViewModel) {
                 }
             } else {
                 Column(Modifier.fillMaxSize()) {
-                    HeaderRow(vm)
+                    HeaderRow({ showAbout = true }, { showSettings = true })
                     Spacer(Modifier.height(12.dp))
                     Box {
                         GhostChar(pager, Modifier.align(Alignment.BottomEnd))
@@ -354,10 +357,21 @@ private fun Home(vm: AppViewModel) {
             onDismiss = { showHotspot = false },
         )
     }
+    if (showSettings) {
+        SettingsSheet(
+            hotspot = s?.hotspot ?: "",
+            onEditHotspot = { showHotspot = true },
+            onRemoveToken = vm::removeToken,
+            onDismiss = { showSettings = false },
+        )
+    }
+    if (showAbout) {
+        AboutSheet { showAbout = false }
+    }
 }
 
 @Composable
-private fun HeaderRow(vm: AppViewModel) {
+private fun HeaderRow(onAbout: () -> Unit, onSettings: () -> Unit) {
     Column(Modifier.fillMaxWidth()) {
         Row(
             Modifier.fillMaxWidth().height(30.dp),
@@ -365,7 +379,10 @@ private fun HeaderRow(vm: AppViewModel) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Wordmark()
-            Chip("TOKEN SET") { vm.removeToken() }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Chip("ABOUT", onClick = onAbout)
+                Chip("SETTINGS", onClick = onSettings)
+            }
         }
         Spacer(Modifier.height(6.dp))
         /* The picture rail. */
@@ -519,34 +536,32 @@ private fun StatusLine(vm: AppViewModel) {
     }
 }
 
-/* One inked strip, three cells, a sliding ink fill under the labels. */
+/* Bare labels, no box: the chosen mode carries an ink underline. */
 @Composable
 private fun ModeStrip(selected: String?, onSelect: (String) -> Unit) {
-    BoxWithConstraints(Modifier.fillMaxWidth().height(36.dp).border(1.dp, Ink)) {
-        val cellW = maxWidth / MODES.size
-        val x by animateDpAsState(
-            cellW * MODES.indexOf(selected).coerceAtLeast(0),
-            tween(240, easing = FastOutSlowInEasing),
-            label = "modeX",
-        )
-        if (selected != null) {
-            Box(Modifier.offset(x = x).width(cellW).fillMaxHeight().background(Ink))
-        }
-        Row(Modifier.fillMaxSize()) {
-            MODES.forEachIndexed { i, m ->
-                Box(
-                    Modifier.weight(1f).fillMaxHeight().clickable { onSelect(m) },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        m.uppercase(),
-                        style = MicroStyle,
-                        color = if (m == selected) Mat else InkFaint,
-                    )
-                }
-                if (i < MODES.size - 1) {
-                    Box(Modifier.width(1.dp).fillMaxHeight().background(Hairline))
-                }
+    Row(Modifier.fillMaxWidth().height(36.dp)) {
+        MODES.forEach { m ->
+            val active = m == selected
+            val fg by animateColorAsState(
+                if (active) Ink else InkFaint, tween(160), label = "modeFg",
+            )
+            val bar by animateColorAsState(
+                if (active) Ink else Color.Transparent, tween(160), label = "modeBar",
+            )
+            Column(
+                Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .clickable(
+                        remember { MutableInteractionSource() },
+                        indication = null,
+                    ) { onSelect(m) },
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text(m.uppercase(), style = MicroStyle, color = fg)
+                Spacer(Modifier.height(5.dp))
+                Box(Modifier.width(22.dp).height(2.dp).background(bar))
             }
         }
     }
