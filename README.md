@@ -47,6 +47,7 @@ generator/   Python renderer, page modules, page data, fonts
 firmware/    Arduino sketch for the ESP32-L, panel driver included
 output/      Rendered binary and preview, updated four times a day
 portal/      Settings portal, served at chuatzeyee.github.io/Tylendar
+android/     Android remote control app, sideloaded over adb
 docs/        Flashing guide for macOS, hardware assembly guide
 ```
 
@@ -94,6 +95,16 @@ Actions, read and write, this repo only): the page stays blank until
 GitHub confirms the token can write to this repo, and the token never
 leaves your browser. The board picks up any change at its next wake,
 or immediately if you press the EN button on the back of the frame.
+
+<img src="docs/screenshots/portal.png" alt="Settings portal" width="480">
+
+There is also a native Android app in `android/`, a private gallery
+version of the same remote: swipe between the seven pages, stamp one
+onto the frame, read today's poem in English, switch modes, or force a
+render. Build and sideload instructions in
+[docs/ANDROID_MACOS.md](docs/ANDROID_MACOS.md).
+
+<img src="docs/screenshots/app.png" alt="Android app" width="480">
 
 Everything the portal does can also be done on github.com directly,
 with your GitHub login (and 2FA) as the front door:
