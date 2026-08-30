@@ -1,32 +1,47 @@
 package com.chuatzeyee.tylendar.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -41,36 +56,58 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.lerp
-import coil3.compose.AsyncImage
 import com.chuatzeyee.tylendar.AppViewModel
 import com.chuatzeyee.tylendar.Gate
 import com.chuatzeyee.tylendar.MODES
 import com.chuatzeyee.tylendar.OWNER
 import com.chuatzeyee.tylendar.PAGES
-import com.chuatzeyee.tylendar.RAW
 import com.chuatzeyee.tylendar.REPO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.absoluteValue
+
+/* The gallery wall. */
+internal val WallBrush = Brush.verticalGradient(
+    0f to WallTop, 0.55f to Paper, 1f to WallBottom,
+)
+
+internal val PAGE_ZH = mapOf(
+    "almanac" to "黃曆",
+    "poem" to "唐詩",
+    "character" to "漢字",
+    "landscape" to "山水",
+    "weather" to "天氣",
+    "month" to "月曆",
+    "year" to "年曆",
+)
+
+private val PAGE_KEYS = mapOf(
+    Key.A to "almanac",
+    Key.P to "poem",
+    Key.C to "character",
+    Key.L to "landscape",
+    Key.W to "weather",
+    Key.M to "month",
+    Key.Y to "year",
+)
 
 @Composable
 fun App(vm: AppViewModel) {
@@ -83,21 +120,28 @@ fun App(vm: AppViewModel) {
 
 @Composable
 private fun Wordmark() {
-    Text("TYLENDAR", style = MaterialTheme.typography.titleLarge.copy(letterSpacing = 4.sp))
+    Text("TYLENDAR", style = WordmarkStyle)
 }
 
 @Composable
 private fun Splash() {
-    Box(Modifier.fillMaxSize().background(Paper), contentAlignment = Alignment.Center) {
-        Wordmark()
+    Box(Modifier.fillMaxSize().background(WallBrush), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Wordmark()
+            Spacer(Modifier.height(14.dp))
+            val pulse = rememberInfiniteTransition(label = "splash")
+            val a by pulse.animateFloat(
+                0.4f, 1f,
+                infiniteRepeatable(tween(900), RepeatMode.Reverse),
+                label = "splashAlpha",
+            )
+            Box(Modifier.size(10.dp).graphicsLayer { alpha = a }.background(Seal))
+        }
     }
 }
 
-@Composable
-private fun Label(text: String) {
-    Text(text, style = LabelStyle, modifier = Modifier.padding(top = 16.dp, bottom = 6.dp))
-}
-
+/* A plaque: matted, hairline framed, never pill shaped. Red belongs
+   only to the seal and the commit button. */
 @Composable
 internal fun Chip(
     text: String,
@@ -105,13 +149,20 @@ internal fun Chip(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val active = selected || pressed
+    val bg by animateColorAsState(if (active) Ink else Mat, tween(160), label = "chipBg")
+    val fg by animateColorAsState(if (active) Mat else Ink, tween(160), label = "chipFg")
     Box(
         modifier
-            .border(if (selected) 2.dp else 1.dp, if (selected) Seal else Ink)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 8.dp)
+            .shadow(1.dp, ambientColor = ShadowUmber, spotColor = ShadowUmber)
+            .background(bg)
+            .border(1.dp, Hairline)
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 7.dp)
     ) {
-        Text(text, style = LabelStyle, color = if (selected) Seal else Ink)
+        Text(text, style = MicroStyle, color = fg)
     }
 }
 
@@ -119,72 +170,70 @@ internal fun Chip(
 private fun TokenGate(error: String?, onSave: (String) -> Unit) {
     val uri = LocalUriHandler.current
     var token by remember { mutableStateOf("") }
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(Paper)
-            .safeDrawingPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Wordmark()
-        Text(
-            "This remote needs a fine grained GitHub token with Contents and Actions write access on $OWNER/$REPO. It stays on this phone.",
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 16.dp, bottom = 16.dp),
-        )
-        Chip("CREATE A TOKEN") {
-            uri.openUri("https://github.com/settings/personal-access-tokens/new")
-        }
-        OutlinedTextField(
-            value = token,
-            onValueChange = { token = it },
-            singleLine = true,
-            placeholder = { Text("github_pat_...") },
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Ink,
-                unfocusedBorderColor = Ink,
-                cursorColor = Seal,
-            ),
-            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-        )
-        if (error != null) {
-            Text(
-                error,
-                color = Seal,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = 16.dp),
-            )
-        }
-        Button(
-            onClick = { onSave(token) },
-            colors = ButtonDefaults.buttonColors(containerColor = Seal, contentColor = Paper),
+    Box(Modifier.fillMaxSize().background(WallBrush).safeDrawingPadding()) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
         ) {
-            Text("UNLOCK", style = LabelStyle)
+            Column(
+                Modifier
+                    .widthIn(max = 420.dp)
+                    .shadow(
+                        4.dp, RoundedCornerShape(2.dp),
+                        ambientColor = ShadowUmber, spotColor = ShadowUmber,
+                    )
+                    .background(Mat, RoundedCornerShape(2.dp))
+                    .border(1.dp, Hairline, RoundedCornerShape(2.dp))
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Wordmark()
+                Text(
+                    "This remote needs a fine grained GitHub token with Contents and Actions write access on $OWNER/$REPO. It stays on this phone.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 16.dp),
+                )
+                Chip("CREATE A TOKEN") {
+                    uri.openUri("https://github.com/settings/personal-access-tokens/new")
+                }
+                OutlinedTextField(
+                    value = token,
+                    onValueChange = { token = it },
+                    singleLine = true,
+                    placeholder = { Text("github_pat_...") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Ink,
+                        unfocusedBorderColor = Hairline,
+                        cursorColor = Seal,
+                    ),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                )
+                if (error != null) {
+                    Text(
+                        error,
+                        color = Seal,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(bottom = 16.dp),
+                    )
+                }
+                CommitButton("UNLOCK") { onSave(token) }
+            }
         }
     }
 }
 
-private val PAGE_KEYS = mapOf(
-    Key.A to "almanac",
-    Key.P to "poem",
-    Key.C to "character",
-    Key.L to "landscape",
-    Key.W to "weather",
-    Key.M to "month",
-    Key.Y to "year",
-)
-
-/* One screen, nothing scrolls. The hero is a swipeable carousel of the
-   seven pages with the neighbours peeking in; the page the frame is
-   actually showing wears a red seal. On the Titan 2's square screen the
-   controls sit beside the carousel, on a tall phone below it. */
+/* One screen, nothing scrolls. A lit gallery wall: the seven pages hang
+   as framed works sliding through a fixed spotlight, the docent panel
+   carries the wake clock and the controls. On the Titan 2's square
+   screen the panel sits beside the gallery, on a tall phone below it. */
 @Composable
 private fun Home(vm: AppViewModel) {
     val s = vm.settings
@@ -214,66 +263,87 @@ private fun Home(vm: AppViewModel) {
         }
     }
 
-    BoxWithConstraints(
-        Modifier
-            .fillMaxSize()
-            .background(Paper)
-            .safeDrawingPadding()
-            .focusRequester(focus)
-            .focusable()
-            /* Titan 2 hardware QWERTY. Bubbling onKeyEvent, not preview,
-               so the hotspot text field keeps its own keys.
-               ponytail: verify key delivery on the physical device */
-            .onKeyEvent { e ->
-                if (e.type != KeyEventType.KeyUp) return@onKeyEvent false
-                val page = PAGE_KEYS[e.key]
-                when {
-                    page != null -> {
-                        vm.setPage(page)
-                        scope.launch { pager.animateScrollToPage(PAGES.indexOf(page)) }
-                        true
+    Box(Modifier.fillMaxSize().background(WallBrush)) {
+        BoxWithConstraints(
+            Modifier
+                .fillMaxSize()
+                .safeDrawingPadding()
+                .focusRequester(focus)
+                .focusable()
+                /* Titan 2 hardware QWERTY. Bubbling onKeyEvent, not preview,
+                   so the hotspot text field keeps its own keys.
+                   ponytail: verify key delivery on the physical device */
+                .onKeyEvent { e ->
+                    if (e.type != KeyEventType.KeyUp) return@onKeyEvent false
+                    val page = PAGE_KEYS[e.key]
+                    when {
+                        page != null -> {
+                            vm.setPage(page)
+                            scope.launch { pager.animateScrollToPage(PAGES.indexOf(page)) }
+                            true
+                        }
+                        e.key == Key.R -> { vm.forceRender("auto"); true }
+                        else -> false
                     }
-                    e.key == Key.R -> { vm.forceRender("auto"); true }
-                    else -> false
+                }
+                .padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 16.dp)
+        ) {
+            val availH = maxHeight
+            val wide = maxWidth >= availH
+            if (wide) {
+                Column(Modifier.fillMaxSize()) {
+                    HeaderRow(vm)
+                    Spacer(Modifier.height(12.dp))
+                    Row(
+                        Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(20.dp),
+                    ) {
+                        Gallery(
+                            vm, pager,
+                            cardHeight = availH - 177.dp,
+                            onShowPoem = { showPoem = true },
+                            modifier = Modifier.weight(11f).fillMaxHeight(),
+                        )
+                        Box(Modifier.weight(9f).fillMaxHeight()) {
+                            GhostChar(pager, Modifier.align(Alignment.BottomEnd))
+                            DocentPanel(
+                                vm, wake,
+                                compact = availH < 460.dp,
+                                onEditHotspot = { showHotspot = true },
+                            )
+                        }
+                    }
+                }
+            } else {
+                Column(Modifier.fillMaxSize()) {
+                    HeaderRow(vm)
+                    Spacer(Modifier.height(12.dp))
+                    Box {
+                        GhostChar(pager, Modifier.align(Alignment.BottomEnd))
+                        Gallery(
+                            vm, pager,
+                            cardHeight = (availH - 340.dp).coerceAtLeast(220.dp),
+                            onShowPoem = { showPoem = true },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    DocentPanel(
+                        vm, wake,
+                        compact = false,
+                        onEditHotspot = { showHotspot = true },
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
-            .padding(16.dp)
-    ) {
-        val availH = maxHeight
-        val wide = maxWidth >= availH
-        if (wide) {
-            Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Carousel(
-                    vm, pager,
-                    cardHeight = availH - 116.dp,
-                    onShowPoem = { showPoem = true },
-                    modifier = Modifier.weight(11f).fillMaxHeight(),
-                )
-                Column(Modifier.weight(9f).verticalScroll(rememberScrollState())) {
-                    Controls(vm, wake, header = true, onEditHotspot = { showHotspot = true })
-                }
-            }
-        } else {
-            Column(Modifier.fillMaxSize()) {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Wordmark()
-                    Chip("TOKEN SET") { vm.removeToken() }
-                }
-                Spacer(Modifier.height(8.dp))
-                Carousel(
-                    vm, pager,
-                    cardHeight = (availH - 380.dp).coerceAtLeast(180.dp),
-                    onShowPoem = { showPoem = true },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Column(Modifier.verticalScroll(rememberScrollState())) {
-                    Controls(vm, wake, header = false, onEditHotspot = { showHotspot = true })
-                }
-            }
+        }
+
+        AnimatedVisibility(
+            visible = showPoem && vm.poem != null,
+            enter = slideInVertically(tween(260)) { it / 8 } + fadeIn(tween(260)),
+            exit = fadeOut(tween(200)),
+        ) {
+            vm.poem?.let { PoemOverlay(it) { showPoem = false } }
         }
     }
 
@@ -284,212 +354,236 @@ private fun Home(vm: AppViewModel) {
             onDismiss = { showHotspot = false },
         )
     }
-    if (showPoem) {
-        vm.poem?.let { PoemSheet(it) { showPoem = false } }
-    }
 }
 
 @Composable
-private fun Carousel(
-    vm: AppViewModel,
-    pager: androidx.compose.foundation.pager.PagerState,
-    cardHeight: Dp,
-    onShowPoem: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val s = vm.settings
-    val scope = rememberCoroutineScope()
-    val haptic = LocalHapticFeedback.current
-    val committedIdx = PAGES.indexOf(s?.page)
-    val cardWidth = cardHeight * 2f / 3f
-
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        BoxWithConstraints(Modifier.fillMaxWidth()) {
-            val pad = ((maxWidth - cardWidth) / 2).coerceAtLeast(20.dp)
-            HorizontalPager(
-                state = pager,
-                contentPadding = PaddingValues(horizontal = pad),
-                pageSpacing = 10.dp,
-            ) { i ->
-                val page = PAGES[i]
-                val committed = i == committedIdx
-                val dist = ((pager.currentPage - i) + pager.currentPageOffsetFraction)
-                    .absoluteValue.coerceIn(0f, 1f)
-                Box(
-                    Modifier
-                        .height(cardHeight)
-                        .fillMaxWidth()
-                        .graphicsLayer {
-                            val k = lerp(1f, 0.92f, dist)
-                            scaleX = k
-                            scaleY = k
-                            alpha = lerp(1f, 0.45f, dist)
-                        },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Box(
-                        Modifier
-                            .height(cardHeight)
-                            .width(cardWidth)
-                            .border(if (committed) 2.dp else 1.dp, Ink)
-                            .background(Paper)
-                            .clickable { scope.launch { pager.animateScrollToPage(i) } }
-                            .padding(6.dp)
-                    ) {
-                        AsyncImage(
-                            model = if (committed) vm.previewUrl else thumbUrl(page, s?.mode),
-                            contentDescription = page,
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                        if (committed) {
-                            Box(
-                                Modifier
-                                    .align(Alignment.TopEnd)
-                                    .size(24.dp)
-                                    .background(Seal),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text("曆", color = Paper, fontSize = 13.sp)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        val current = PAGES[pager.currentPage]
-        val caption = if (pager.currentPage == committedIdx) {
-            "${current.uppercase()}  ${if (vm.previewIsLive) "LIVE" else "PREVIEW"}"
-        } else {
-            current.uppercase()
-        }
-        Text(caption, style = LabelStyle, modifier = Modifier.padding(top = 8.dp))
-
+private fun HeaderRow(vm: AppViewModel) {
+    Column(Modifier.fillMaxWidth()) {
         Row(
-            Modifier.padding(top = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            PAGES.indices.forEach { i ->
-                Box(
-                    Modifier
-                        .size(7.dp)
-                        .then(
-                            when {
-                                i == committedIdx -> Modifier.background(Seal)
-                                i == pager.currentPage -> Modifier.background(Ink)
-                                else -> Modifier.border(1.dp, Ink)
-                            }
-                        )
-                        .clickable { scope.launch { pager.animateScrollToPage(i) } }
-                )
-            }
-        }
-
-        /* Fixed-height action slot so the carousel never jumps. */
-        Box(Modifier.height(52.dp).padding(top = 10.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AnimatedVisibility(visible = pager.currentPage != committedIdx && s != null) {
-                    Button(
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            vm.setPage(PAGES[pager.currentPage])
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Seal, contentColor = Paper),
-                    ) {
-                        Text("SET AS FRAME PAGE", style = LabelStyle)
-                    }
-                }
-                AnimatedVisibility(visible = current == "poem" && vm.poem != null) {
-                    Chip("IN ENGLISH", onClick = onShowPoem)
-                }
-            }
-        }
-    }
-}
-
-/* The committed gallery thumbnails; dark almanac is the one page with a
-   real dark thumbnail, everything else always renders light. */
-private fun thumbUrl(page: String, mode: String?): String {
-    val name = if (page == "almanac" && mode == "dark") "almanac-dark" else page
-    return "$RAW/docs/previews/$name.png"
-}
-
-@Composable
-private fun Controls(
-    vm: AppViewModel,
-    wake: Pair<String, String>,
-    header: Boolean,
-    onEditHotspot: () -> Unit,
-) {
-    val s = vm.settings
-    if (header) {
-        Row(
-            Modifier.fillMaxWidth(),
+            Modifier.fillMaxWidth().height(30.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Wordmark()
             Chip("TOKEN SET") { vm.removeToken() }
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(6.dp))
+        /* The picture rail. */
+        Box(Modifier.fillMaxWidth().height(1.dp).background(Hairline))
     }
+}
 
-    if (vm.status.isNotEmpty()) {
+/* The current page's character, engraved into the wall at 6% ink. */
+@Composable
+private fun GhostChar(pager: PagerState, modifier: Modifier = Modifier) {
+    Crossfade(
+        pager.currentPage,
+        animationSpec = tween(300),
+        label = "ghost",
+        modifier = modifier,
+    ) { i ->
         Text(
-            vm.status,
-            style = LabelStyle,
-            color = if (vm.status.contains("FAILED")) Seal else Ink,
+            PAGE_ZH[PAGES[i]].orEmpty().take(1),
+            fontFamily = FontFamily.Default,
+            fontSize = 170.sp,
+            color = InkGhost,
         )
     }
-    if (vm.rendering) {
-        LinearProgressIndicator(
-            color = Seal,
-            trackColor = Paper,
-            modifier = Modifier.fillMaxWidth().padding(top = 6.dp).height(2.dp),
-        )
-    }
-    Text(
-        "NEXT WAKE ${wake.first} (${wake.second})",
-        style = LabelStyle,
-        modifier = Modifier.padding(top = 6.dp),
-    )
-    vm.error?.let {
-        Text(
-            it,
-            color = Seal,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(top = 6.dp).clickable { vm.error = null },
-        )
-    }
+}
 
-    Label("MODE")
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        MODES.forEach { m ->
-            Chip(m.uppercase(), selected = m == s?.mode) { vm.setMode(m) }
-        }
-    }
-
-    Label("RENDER NOW")
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        MODES.forEach { m ->
-            Chip(m.uppercase()) { vm.forceRender(m) }
-        }
-    }
-
-    Label("HOTSPOT")
+@Composable
+private fun Eyebrow(text: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            s?.hotspot ?: "",
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f),
-        )
-        Chip("EDIT", onClick = onEditHotspot)
+        Box(Modifier.width(12.dp).height(1.dp).background(Brass))
+        Spacer(Modifier.width(4.dp))
+        Text(text, style = LabelStyle, color = InkFaint)
     }
+}
 
-    Text(
-        "The frame picks changes up at its next wake, or press EN on the frame.",
-        style = MaterialTheme.typography.bodyMedium,
-        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
+@Composable
+private fun DocentPanel(
+    vm: AppViewModel,
+    wake: Pair<String, String>,
+    compact: Boolean,
+    onEditHotspot: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val s = vm.settings
+    val gap = if (compact) 12.dp else 16.dp
+    Column(modifier.fillMaxHeight()) {
+        /* The wake hero: when the frame next opens its eyes. */
+        Eyebrow("NEXT WAKE")
+        Spacer(Modifier.height(6.dp))
+        Text(
+            wake.first,
+            style = if (wake.first.length > 5) WakeHeroStyle.copy(fontSize = 32.sp)
+            else WakeHeroStyle,
+        )
+        Text(
+            wake.second.lowercase(),
+            fontFamily = Canela,
+            fontSize = 12.sp,
+            color = InkFaint,
+        )
+        Spacer(Modifier.height(6.dp))
+        /* The incense rule. */
+        Box(Modifier.fillMaxWidth().height(2.dp).background(Brass))
+
+        Spacer(Modifier.height(14.dp))
+        StatusLine(vm)
+
+        Spacer(Modifier.height(gap))
+        Eyebrow("MODE")
+        Spacer(Modifier.height(6.dp))
+        ModeStrip(s?.mode) { vm.setMode(it) }
+
+        Spacer(Modifier.height(gap))
+        Eyebrow("RENDER NOW")
+        Spacer(Modifier.height(6.dp))
+        RenderStrip { vm.forceRender(it) }
+
+        Spacer(Modifier.height(gap))
+        Eyebrow("HOTSPOT")
+        Spacer(Modifier.height(6.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                s?.hotspot ?: "",
+                fontFamily = Canela,
+                fontSize = 16.sp,
+                color = Ink,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Chip("EDIT", onClick = onEditHotspot)
+        }
+
+        Spacer(Modifier.weight(1f))
+        Box(Modifier.fillMaxWidth().height(1.dp).background(Hairline))
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "The frame picks changes up at its next wake, or press EN on the frame.",
+            fontFamily = Canela,
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            color = InkFaint,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun StatusLine(vm: AppViewModel) {
+    val pulse = rememberInfiniteTransition(label = "status")
+    val a by pulse.animateFloat(
+        0.4f, 1f,
+        infiniteRepeatable(tween(900), RepeatMode.Reverse),
+        label = "statusAlpha",
     )
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            val square = when {
+                vm.rendering -> Gold
+                vm.status.contains("FAILED") -> Seal
+                else -> Ink
+            }
+            Box(
+                Modifier
+                    .size(8.dp)
+                    .graphicsLayer { alpha = if (vm.rendering) a else 1f }
+                    .background(square)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                vm.status.ifEmpty { "READY" },
+                style = MicroStyle,
+                color = Ink,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (vm.rendering) {
+            LinearProgressIndicator(
+                color = Gold,
+                trackColor = Hairline,
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp).height(2.dp),
+            )
+        }
+        vm.error?.let {
+            Text(
+                it,
+                color = Seal,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 4.dp).clickable { vm.error = null },
+            )
+        }
+    }
+}
+
+/* One inked strip, three cells, a sliding ink fill under the labels. */
+@Composable
+private fun ModeStrip(selected: String?, onSelect: (String) -> Unit) {
+    BoxWithConstraints(Modifier.fillMaxWidth().height(36.dp).border(1.dp, Ink)) {
+        val cellW = maxWidth / MODES.size
+        val x by animateDpAsState(
+            cellW * MODES.indexOf(selected).coerceAtLeast(0),
+            tween(240, easing = FastOutSlowInEasing),
+            label = "modeX",
+        )
+        if (selected != null) {
+            Box(Modifier.offset(x = x).width(cellW).fillMaxHeight().background(Ink))
+        }
+        Row(Modifier.fillMaxSize()) {
+            MODES.forEachIndexed { i, m ->
+                Box(
+                    Modifier.weight(1f).fillMaxHeight().clickable { onSelect(m) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        m.uppercase(),
+                        style = MicroStyle,
+                        color = if (m == selected) Mat else InkFaint,
+                    )
+                }
+                if (i < MODES.size - 1) {
+                    Box(Modifier.width(1.dp).fillMaxHeight().background(Hairline))
+                }
+            }
+        }
+    }
+}
+
+/* Same strip geometry, but momentary: the tapped cell flashes gold and
+   fires a render, the same gold as the progress bar it starts. */
+@Composable
+private fun RenderStrip(onRender: (String) -> Unit) {
+    val scope = rememberCoroutineScope()
+    val flashes = remember { MODES.map { Animatable(0f) } }
+    Row(Modifier.fillMaxWidth().height(36.dp).border(1.dp, Ink)) {
+        MODES.forEachIndexed { i, m ->
+            val flash = flashes[i]
+            Box(
+                Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .drawBehind { drawRect(Gold.copy(alpha = flash.value)) }
+                    .clickable {
+                        onRender(m)
+                        scope.launch {
+                            flash.snapTo(1f)
+                            flash.animateTo(0f, tween(240))
+                        }
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(m.uppercase(), style = MicroStyle, color = Ink)
+            }
+            if (i < MODES.size - 1) {
+                Box(Modifier.width(1.dp).fillMaxHeight().background(Hairline))
+            }
+        }
+    }
 }

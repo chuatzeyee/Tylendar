@@ -37,6 +37,7 @@ data class Poem(
     val lines: List<String>,
     val titleEn: String?,
     val english: List<String>?,
+    val gist: String?,
 )
 
 data class RepoSettings(val json: JsonObject, val sha: String) {
@@ -185,6 +186,7 @@ class Github(private val token: () -> String?) {
                 lines = lines("lines") ?: emptyList(),
                 titleEn = o["title_en"]?.jsonPrimitive?.contentOrNull,
                 english = lines("english"),
+                gist = o["gist"]?.jsonPrimitive?.contentOrNull,
             )
         }
     }

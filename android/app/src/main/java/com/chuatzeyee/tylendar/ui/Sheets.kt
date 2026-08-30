@@ -1,10 +1,19 @@
 package com.chuatzeyee.tylendar.ui
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -18,17 +27,33 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.chuatzeyee.tylendar.Poem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HotspotSheet(initial: String, onSave: (String) -> Boolean, onDismiss: () -> Unit) {
     var value by remember { mutableStateOf(initial) }
     var rejected by remember { mutableStateOf(false) }
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Paper) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Mat,
+        dragHandle = {
+            Box(
+                Modifier.padding(vertical = 10.dp).width(28.dp).height(2.dp).background(Hairline)
+            )
+        },
+    ) {
         Column(Modifier.padding(24.dp)) {
-            Text("HOTSPOT NAME", style = LabelStyle)
+            Text("HOTSPOT", style = LabelStyle, color = InkFaint)
             OutlinedTextField(
                 value = value,
                 onValueChange = { v ->
@@ -39,7 +64,7 @@ fun HotspotSheet(initial: String, onSave: (String) -> Boolean, onDismiss: () -> 
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Ink,
-                    unfocusedBorderColor = Ink,
+                    unfocusedBorderColor = Hairline,
                     cursorColor = Seal,
                 ),
                 modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
@@ -56,46 +81,90 @@ fun HotspotSheet(initial: String, onSave: (String) -> Boolean, onDismiss: () -> 
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }
-            Chip("SAVE", modifier = Modifier.padding(top = 16.dp, bottom = 24.dp)) {
+            CommitButton("SAVE", modifier = Modifier.padding(top = 16.dp, bottom = 24.dp)) {
                 if (onSave(value)) onDismiss() else rejected = true
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/* Today's poem in English, hung on its own wall. */
 @Composable
-fun PoemSheet(p: com.chuatzeyee.tylendar.Poem, onDismiss: () -> Unit) {
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Paper) {
+fun PoemOverlay(p: Poem, onClose: () -> Unit) {
+    BackHandler(onBack = onClose)
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(WallBrush)
+            /* Consume taps so the gallery beneath stays put. */
+            .clickable(remember { MutableInteractionSource() }, indication = null) {}
+    ) {
+        Chip(
+            "CLOSE",
+            modifier = Modifier.align(Alignment.TopEnd).padding(20.dp),
+            onClick = onClose,
+        )
         Column(
             Modifier
+                .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(start = 24.dp, end = 24.dp, bottom = 32.dp)
+                .padding(28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
         ) {
-            Text("TODAY'S POEM", style = LabelStyle, color = Seal)
+            Text("TODAY'S POEM", style = LabelStyle, color = InkFaint)
+            Spacer(Modifier.height(10.dp))
             Text(
                 p.titleEn ?: p.title,
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(top = 8.dp),
+                fontFamily = Canela,
+                fontSize = 26.sp,
+                color = Ink,
+                textAlign = TextAlign.Center,
             )
-            Text(
-                "${p.title}  ${p.author}",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 2.dp),
-            )
+            Spacer(Modifier.height(4.dp))
+            Text("${p.title}  ${p.author}", style = CjkStyle)
             if (p.authorRoman.isNotEmpty()) {
+                Spacer(Modifier.height(2.dp))
                 Text(
                     if (p.authorDates.isEmpty()) p.authorRoman
                     else "${p.authorRoman}, ${p.authorDates}",
-                    style = LabelStyle,
-                    modifier = Modifier.padding(top = 2.dp),
+                    style = MicroStyle,
+                    color = InkFaint,
                 )
             }
             p.english?.let { lines ->
-                Spacer(Modifier.height(12.dp))
-                lines.forEach { line ->
-                    Text(line, style = MaterialTheme.typography.bodyLarge)
+                Spacer(Modifier.height(20.dp))
+                Column(
+                    Modifier.widthIn(max = 340.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    lines.forEachIndexed { i, line ->
+                        val text = if (i == 0 && line.isNotEmpty()) {
+                            /* Drop accent: the first character in seal red. */
+                            buildAnnotatedString {
+                                withStyle(SpanStyle(color = Seal)) { append(line.first()) }
+                                append(line.drop(1))
+                            }
+                        } else {
+                            buildAnnotatedString { append(line) }
+                        }
+                        Text(
+                            text,
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                 }
+            }
+            p.gist?.let {
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    it,
+                    fontFamily = Canela,
+                    fontSize = 13.sp,
+                    color = InkFaint,
+                    textAlign = TextAlign.Center,
+                )
             }
         }
     }
