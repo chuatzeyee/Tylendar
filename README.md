@@ -87,7 +87,7 @@ docs/        Flashing guide for macOS, hardware assembly guide
 The portal at https://chuatzeyee.github.io/Tylendar/ shows the current
 page, the render status, and the next wake, and lets you pick which
 page the frame shows (almanac, poem, character, landscape, weather,
-month, year, or joke), change the page mode, the per page options, the
+month, year, joke, photo, or flora), change the page mode, the per page options, the
 hotspot label, or force a
 render. It is a static page
 served by GitHub Pages (source in `portal/`), locked behind a fine
@@ -100,7 +100,7 @@ or immediately if you press the EN button on the back of the frame.
 <img src="docs/screenshots/portal.png" alt="Settings portal" width="480">
 
 There is also a native Android app in `android/`, a private gallery
-version of the same remote: swipe between the eight pages, stamp one
+version of the same remote: swipe between the ten pages, stamp one
 onto the frame, read today's poem in English, switch modes, tune the
 page options, or force a
 render. Build and sideload instructions in
@@ -134,6 +134,9 @@ with your GitHub login (and 2FA) as the front door:
     - `"joke_word"`: `"daily"` rotates through the deck, or pin one of
       `"jibai"`, `"kanina"`, `"lanjiao"`, `"nabei"`, `"jiaksai"`,
       `"sibei"`, `"walao"`, `"siao"`.
+    - `"flora_plant"`: `"season"` follows the Four Gentlemen through the
+      year, or pin `"plum"`, `"orchid"`, `"bamboo"`, or
+      `"chrysanthemum"`.
 - Force a refresh now: repo Actions tab, "Render daily calendar", "Run
   workflow". The mode dropdown there forces light or dark for that one
   render only; scheduled renders go back to following settings.json.
@@ -169,16 +172,23 @@ render picks it up, or force one from the Actions tab.
   Singlish profanity a day, romanized where the pinyin would be, with a
   polite English pun for the meaning and two usage examples. The
   `joke_word` option pins a favourite.
+- `photo`: a photo a day from `generator/photos/`, dithered down to the
+  panel's four colors and matted like a small gallery print. Drop your
+  own photos in that folder to build the rotation.
+- `flora`: the Four Gentlemen of ink painting, one plant a season (plum
+  blossom in winter, orchid in spring, bamboo in summer, chrysanthemum
+  in autumn), grown procedurally from the date so each day is a new
+  plant. The `flora_plant` option pins one year round.
 
 | almanac | poem | character |
 | --- | --- | --- |
 | ![Almanac page](docs/previews/almanac.png) | ![Poem page](docs/previews/poem.png) | ![Character page](docs/previews/character.png) |
 | **landscape** | **weather** | **month** |
 | ![Landscape page](docs/previews/landscape.png) | ![Weather page](docs/previews/weather.png) | ![Month page](docs/previews/month.png) |
-| **year** | **joke** | **almanac, dark weekday** |
-| ![Year page](docs/previews/year.png) | ![Joke page](docs/previews/joke.png) | ![Dark almanac, black](docs/previews/almanac-dark.png) |
-| **almanac, dark weekend** | | |
-| ![Dark almanac, red](docs/previews/almanac-dark-weekend.png) | | |
+| **year** | **joke** | **photo** |
+| ![Year page](docs/previews/year.png) | ![Joke page](docs/previews/joke.png) | ![Photo page](docs/previews/photo.png) |
+| **flora** | **almanac, dark weekday** | **almanac, dark weekend** |
+| ![Flora page](docs/previews/flora.png) | ![Dark almanac, black](docs/previews/almanac-dark.png) | ![Dark almanac, red](docs/previews/almanac-dark-weekend.png) |
 
 Previews rendered for 2026-08-29 (dark weekday for 2026-08-28) with the
 `PAGE`, `DARK`, and `OUT_DIR` variables described in

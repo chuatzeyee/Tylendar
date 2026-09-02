@@ -418,6 +418,37 @@
           <span class="badge">Current</span>
         </label>
 
+        <label class="tile">
+          <input type="radio" name="page" value="photo">
+          <svg class="thumb" viewBox="0 0 40 60" aria-hidden="true">
+            <rect class="hl" x="7" y="6" width="26" height="38"/>
+            <circle class="chip" cx="23.5" cy="17" r="4"/>
+            <polygon class="ink" points="7,44 7,40 14,27 20,34 25,29 33,40 33,44"/>
+            <rect class="red" x="27" y="36" width="4" height="4"/>
+            <line class="hl" x1="7" y1="50" x2="33" y2="50"/>
+            <rect class="bar" x="7" y="53" width="14" height="3"/>
+          </svg>
+          <span class="names"><span class="zh">相片</span><span class="en">Photo</span></span>
+          <span class="badge">Current</span>
+        </label>
+
+        <label class="tile">
+          <input type="radio" name="page" value="flora">
+          <svg class="thumb" viewBox="0 0 40 60" aria-hidden="true">
+            <polygon class="ink" points="7,45 11,45 27,15 25,13.5"/>
+            <polygon class="ink" points="17,29 18.5,30.5 29,24 28,22"/>
+            <polygon class="ink" points="12,38 13.5,39.5 21,36.5 20.5,34.5"/>
+            <circle class="red" cx="26.5" cy="13" r="2.6"/>
+            <circle class="red" cx="30" cy="23" r="2.3"/>
+            <circle class="red" cx="22" cy="35" r="2.1"/>
+            <circle class="red" cx="14" cy="31" r="1.9"/>
+            <line class="hl" x1="7" y1="50" x2="33" y2="50"/>
+            <rect class="bar" x="7" y="53" width="14" height="3"/>
+          </svg>
+          <span class="names"><span class="zh">四君</span><span class="en">Flora</span></span>
+          <span class="badge">Current</span>
+        </label>
+
       </div>
     </div>
     <p class="hint">Tap a page to switch. The frame picks it up at its next wake (00:20, 07:30, 13:00, 19:00), or straight away with the EN button.</p>
@@ -488,6 +519,17 @@
         <option value="walao">wa lao, Wah Lau</option>
         <option value="siao">siao, See Ow</option>
       </select>
+    </div>
+    <div class="field" data-page="flora" hidden>
+      <span class="field-label" id="fp-label">Flora plant</span>
+      <div class="seg" role="radiogroup" aria-labelledby="fp-label">
+        <label><input type="radio" name="flora_plant" value="season" checked><span>Season</span></label>
+        <label><input type="radio" name="flora_plant" value="plum"><span>Plum</span></label>
+        <label><input type="radio" name="flora_plant" value="orchid"><span>Orchid</span></label>
+        <label><input type="radio" name="flora_plant" value="bamboo"><span>Bamboo</span></label>
+        <label><input type="radio" name="flora_plant" value="chrysanthemum"><span>Mum</span></label>
+      </div>
+      <p class="hint">Season follows the Four Gentlemen: plum in winter, orchid in spring, bamboo in summer, chrysanthemum in autumn.</p>
     </div>
     <div class="field">
       <label for="hotspot">Hotspot label</label>
@@ -696,6 +738,7 @@ const PAGE_OPTS = {
   month_week_start: ["monday", "sunday"],
   poem_lang: ["cn", "en"],
   joke_word: ["daily", "jibai", "kanina", "lanjiao", "nabei", "jiaksai", "sibei", "walao", "siao"],
+  flora_plant: ["season", "plum", "orchid", "bamboo", "chrysanthemum"],
 };
 
 function pickedOpts() {
@@ -792,7 +835,7 @@ async function saveSettings() {
 
 /* ---------- page picker ---------- */
 
-const PAGES = ["almanac", "poem", "character", "landscape", "weather", "month", "year", "joke"];
+const PAGES = ["almanac", "poem", "character", "landscape", "weather", "month", "year", "joke", "photo", "flora"];
 let currentPage = "almanac";
 
 /* Move the current page's tile into the "now showing" slot and the
