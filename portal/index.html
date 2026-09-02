@@ -419,7 +419,7 @@
       </div>
       <p class="hint">Auto is light by day and dark from 19:00. Light or dark pins it until you change it back.</p>
     </div>
-    <div class="field">
+    <div class="field" data-page="year" hidden>
       <span class="field-label" id="yl-label">Year page language</span>
       <div class="seg" role="radiogroup" aria-labelledby="yl-label">
         <label><input type="radio" name="year_lang" value="bilingual" checked><span>Mixed</span></label>
@@ -427,7 +427,7 @@
         <label><input type="radio" name="year_lang" value="cn"><span>Chinese</span></label>
       </div>
     </div>
-    <div class="field">
+    <div class="field" data-page="year" hidden>
       <span class="field-label" id="yf-label">Year page footer</span>
       <div class="seg" role="radiogroup" aria-labelledby="yf-label">
         <label><input type="radio" name="year_footer" value="holidays" checked><span>Holidays</span></label>
@@ -436,7 +436,7 @@
       </div>
       <p class="hint">Calendar counts down to the next event on the ICS feed, Weather shows today's outlook. Either falls back to the holiday countdown when it has nothing.</p>
     </div>
-    <div class="field">
+    <div class="field" data-page="landscape" hidden>
       <span class="field-label" id="ls-label">Landscape scenery</span>
       <div class="seg" role="radiogroup" aria-labelledby="ls-label">
         <label><input type="radio" name="landscape_scenery" value="lake" checked><span>Lake</span></label>
@@ -445,14 +445,14 @@
         <label><input type="radio" name="landscape_scenery" value="night"><span>Night</span></label>
       </div>
     </div>
-    <div class="field">
+    <div class="field" data-page="month" hidden>
       <span class="field-label" id="ws-label">Month week starts on</span>
       <div class="seg" role="radiogroup" aria-labelledby="ws-label">
         <label><input type="radio" name="month_week_start" value="monday" checked><span>Monday</span></label>
         <label><input type="radio" name="month_week_start" value="sunday"><span>Sunday</span></label>
       </div>
     </div>
-    <div class="field">
+    <div class="field" data-page="poem" hidden>
       <span class="field-label" id="pl-label">Poem language</span>
       <div class="seg" role="radiogroup" aria-labelledby="pl-label">
         <label><input type="radio" name="poem_lang" value="cn" checked><span>Chinese</span></label>
@@ -772,6 +772,9 @@ function layoutPageTiles() {
     tile.classList.toggle("now", now);
     input.checked = now;
     (now ? $("page-now") : $("page-grid")).appendChild(tile);
+  });
+  document.querySelectorAll(".field[data-page]").forEach((f) => {
+    f.hidden = f.dataset.page !== currentPage;
   });
   updatePoemCard();
 }
