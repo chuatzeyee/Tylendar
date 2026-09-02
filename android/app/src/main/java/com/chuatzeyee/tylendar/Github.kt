@@ -2,6 +2,7 @@ package com.chuatzeyee.tylendar
 
 import android.util.Base64
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -167,7 +168,10 @@ class Github(private val token: () -> String?) {
        retry with the fresh sha, same loop the portal and render.yml
        use. Unknown settings keys round-trip untouched. */
     suspend fun putSetting(key: String, value: String, message: String) {
-        repeat(3) { attempt ->
+        repeat(5) { attempt ->
+            /* The API can serve a stale sha for a moment after the bot
+               pushes; an instant retry just rereads the same stale sha. */
+            if (attempt > 0) delay(1000L * attempt)
             val cur = settings()
             val updated = JsonObject(cur.json.toMutableMap().apply { put(key, JsonPrimitive(value)) })
             val text = json.encodeToString(JsonObject.serializer(), updated) + "\n"
@@ -182,7 +186,7 @@ class Github(private val token: () -> String?) {
             val (code, _) = call(request("/contents/$SETTINGS_PATH", "PUT", payload))
             when {
                 code in 200..299 -> return
-                code == 409 && attempt < 2 -> Unit
+                code == 409 && attempt < 4 -> Unit
                 else -> throw GithubException("Save failed, GitHub said $code.")
             }
         }

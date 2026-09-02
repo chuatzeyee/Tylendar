@@ -721,7 +721,7 @@ async function putSettings(message, mutate) {
       settingsSha = put.content.sha;
       return;
     } catch (e) {
-      if (e.status !== 409 || attempt >= 2) throw e;
+      if (e.status !== 409 || attempt >= 4) throw e;
       await new Promise((r) => setTimeout(r, 1000 + 1000 * attempt));
     }
   }
