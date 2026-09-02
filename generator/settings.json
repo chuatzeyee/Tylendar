@@ -1,5 +1,10 @@
 {
   "hotspot": "FartOff",
   "mode": "light",
-  "page": "year"
+  "page": "year",
+  "year_lang": "en",
+  "year_footer": "weather",
+  "landscape_scenery": "lake",
+  "month_week_start": "monday",
+  "poem_lang": "cn"
 }
