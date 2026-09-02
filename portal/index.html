@@ -420,6 +420,46 @@
       <p class="hint">Auto is light by day and dark from 19:00. Light or dark pins it until you change it back.</p>
     </div>
     <div class="field">
+      <span class="field-label" id="yl-label">Year page language</span>
+      <div class="seg" role="radiogroup" aria-labelledby="yl-label">
+        <label><input type="radio" name="year_lang" value="bilingual" checked><span>Mixed</span></label>
+        <label><input type="radio" name="year_lang" value="en"><span>English</span></label>
+        <label><input type="radio" name="year_lang" value="cn"><span>Chinese</span></label>
+      </div>
+    </div>
+    <div class="field">
+      <span class="field-label" id="yf-label">Year page footer</span>
+      <div class="seg" role="radiogroup" aria-labelledby="yf-label">
+        <label><input type="radio" name="year_footer" value="holidays" checked><span>Holidays</span></label>
+        <label><input type="radio" name="year_footer" value="event"><span>Calendar</span></label>
+        <label><input type="radio" name="year_footer" value="weather"><span>Weather</span></label>
+      </div>
+      <p class="hint">Calendar counts down to the next event on the ICS feed, Weather shows today's outlook. Either falls back to the holiday countdown when it has nothing.</p>
+    </div>
+    <div class="field">
+      <span class="field-label" id="ls-label">Landscape scenery</span>
+      <div class="seg" role="radiogroup" aria-labelledby="ls-label">
+        <label><input type="radio" name="landscape_scenery" value="lake" checked><span>Lake</span></label>
+        <label><input type="radio" name="landscape_scenery" value="gorge"><span>Gorge</span></label>
+        <label><input type="radio" name="landscape_scenery" value="islands"><span>Islands</span></label>
+        <label><input type="radio" name="landscape_scenery" value="night"><span>Night</span></label>
+      </div>
+    </div>
+    <div class="field">
+      <span class="field-label" id="ws-label">Month week starts on</span>
+      <div class="seg" role="radiogroup" aria-labelledby="ws-label">
+        <label><input type="radio" name="month_week_start" value="monday" checked><span>Monday</span></label>
+        <label><input type="radio" name="month_week_start" value="sunday"><span>Sunday</span></label>
+      </div>
+    </div>
+    <div class="field">
+      <span class="field-label" id="pl-label">Poem language</span>
+      <div class="seg" role="radiogroup" aria-labelledby="pl-label">
+        <label><input type="radio" name="poem_lang" value="cn" checked><span>Chinese</span></label>
+        <label><input type="radio" name="poem_lang" value="en"><span>English</span></label>
+      </div>
+    </div>
+    <div class="field">
       <label for="hotspot">Hotspot label</label>
       <input type="text" id="hotspot" maxlength="24" autocomplete="off" spellcheck="false">
       <p class="hint">Shown beside the WiFi icon at the top of the page. Plain letters, digits and punctuation only.</p>
@@ -619,6 +659,22 @@ async function watchRender(prevId, statusEl) {
 
 let settingsSha = null;
 
+const PAGE_OPTS = {
+  year_lang: ["bilingual", "en", "cn"],
+  year_footer: ["holidays", "event", "weather"],
+  landscape_scenery: ["lake", "gorge", "islands", "night"],
+  month_week_start: ["monday", "sunday"],
+  poem_lang: ["cn", "en"],
+};
+
+function pickedOpts() {
+  const out = {};
+  for (const key of Object.keys(PAGE_OPTS)) {
+    out[key] = document.querySelector("input[name=" + key + "]:checked").value;
+  }
+  return out;
+}
+
 async function loadSettings() {
   try {
     const file = await gh("/contents/" + SETTINGS_PATH + "?ref=main");
@@ -627,6 +683,10 @@ async function loadSettings() {
     const mode = ["auto", "light", "dark"].includes(s.mode) ? s.mode : "auto";
     document.querySelector('input[name=mode][value="' + mode + '"]').checked = true;
     $("hotspot").value = typeof s.hotspot === "string" ? s.hotspot : "";
+    for (const [key, values] of Object.entries(PAGE_OPTS)) {
+      const v = values.includes(s[key]) ? s[key] : values[0];
+      document.querySelector('input[name=' + key + '][value="' + v + '"]').checked = true;
+    }
     currentPage = PAGES.includes(s.page) ? s.page : "almanac";
     layoutPageTiles();
   } catch (e) {
@@ -684,7 +744,7 @@ async function saveSettings() {
   try {
     const prevId = await refreshPanelMeta();
     await putSettings("portal: update settings",
-      (s) => ({ ...s, hotspot, mode, page: currentPage }));
+      (s) => ({ ...s, hotspot, mode, page: currentPage, ...pickedOpts() }));
     status.textContent = "Saved. Rendering";
     watchRender(prevId, status);
   } catch (e) {

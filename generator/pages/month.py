@@ -161,7 +161,11 @@ def ink(text, font, tracking=0):
 def render(d, hl, settings):
     y, m = d.year, d.month
     first, days = calendar.monthrange(y, m)
-    n_rows = (first + days + 6) // 7
+    sunday_first = settings.get("month_week_start") == "sunday"
+    off = (first + 1) % 7 if sunday_first else first
+    wds = WEEKDAYS[-1:] + WEEKDAYS[:-1] if sunday_first else WEEKDAYS
+    sun_col = 0 if sunday_first else 6
+    n_rows = (off + days + 6) // 7
     ys = [GRID_TOP + round(k * (GRID_BOT - GRID_TOP) / n_rows) for k in range(n_rows + 1)]
     hols = holidays()
     dots = month_dots(y, m, days)
@@ -194,8 +198,8 @@ def render(d, hl, settings):
     draw.rectangle([L, RULE_Y, R, RULE_Y + 1], fill=BLACK)
 
     f_wd = latin(16, 650)
-    for i, wd in enumerate(WEEKDAYS):
-        draw_text(img, (XS[i] + 8, WD_BASE), wd, f_wd, RED if i == 6 else BLACK,
+    for i, wd in enumerate(wds):
+        draw_text(img, (XS[i] + 8, WD_BASE), wd, f_wd, RED if i == sun_col else BLACK,
                   anchor="ls", tracking=1)
 
     for yy in ys:
@@ -208,12 +212,12 @@ def render(d, hl, settings):
     f_chip = serif(15, 700)
 
     for day in range(1, days + 1):
-        row, col = divmod(first + day - 1, 7)
+        row, col = divmod(off + day - 1, 7)
         x0, x1, y0, y1 = XS[col], XS[col + 1], ys[row], ys[row + 1]
         label, jieqi, chip, minor = day_facts(y, m, day)
         hol = hols.get(f"{y:04d}-{m:02d}-{day:02d}")
         is_today = day == d.day
-        color = RED if (col == 6 or hol or is_today) else BLACK
+        color = RED if (col == sun_col or hol or is_today) else BLACK
 
         # today: crisp 2px red frame exactly on the cell bounds, drawn
         # over the black hairlines

@@ -39,9 +39,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.graphics.Color
 import com.chuatzeyee.tylendar.OWNER
+import com.chuatzeyee.tylendar.PAGE_OPTIONS
+import com.chuatzeyee.tylendar.PageOption
 import com.chuatzeyee.tylendar.Poem
 import com.chuatzeyee.tylendar.REPO
+import com.chuatzeyee.tylendar.RepoSettings
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -134,6 +141,74 @@ fun SettingsSheet(
                 Chip("REMOVE", onClick = onRemoveToken)
             }
             Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+/* Per-page render options, same underline strips as the mode picker.
+   Every pick commits one settings key and kicks off a render. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PageOptionsSheet(
+    page: String,
+    settings: RepoSettings?,
+    onPick: (String, String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Mat,
+        dragHandle = {
+            Box(
+                Modifier.padding(vertical = 10.dp).width(28.dp).height(2.dp).background(Hairline)
+            )
+        },
+    ) {
+        Column(Modifier.padding(24.dp)) {
+            Text("${page.uppercase()} OPTIONS", style = LabelStyle, color = InkFaint)
+            PAGE_OPTIONS[page].orEmpty().forEach { o ->
+                Spacer(Modifier.height(18.dp))
+                Text(o.label, style = MicroStyle, color = InkFaint)
+                Spacer(Modifier.height(4.dp))
+                OptionStrip(o, settings?.opt(o), onPick)
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "The frame shows the change after its next render.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = InkFaint,
+            )
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun OptionStrip(o: PageOption, selected: String?, onPick: (String, String) -> Unit) {
+    Row(Modifier.fillMaxWidth().height(36.dp)) {
+        o.values.forEachIndexed { i, v ->
+            val active = v == selected
+            val fg by animateColorAsState(
+                if (active) Ink else InkFaint, tween(160), label = "optFg",
+            )
+            val bar by animateColorAsState(
+                if (active) Ink else Color.Transparent, tween(160), label = "optBar",
+            )
+            Column(
+                Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .clickable(
+                        remember { MutableInteractionSource() },
+                        indication = null,
+                    ) { onPick(o.key, v) },
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text(o.names[i], style = MicroStyle, color = fg)
+                Spacer(Modifier.height(5.dp))
+                Box(Modifier.width(22.dp).height(2.dp).background(bar))
+            }
         }
     }
 }

@@ -87,7 +87,8 @@ docs/        Flashing guide for macOS, hardware assembly guide
 The portal at https://chuatzeyee.github.io/Tylendar/ shows the current
 page, the render status, and the next wake, and lets you pick which
 page the frame shows (almanac, poem, character, landscape, weather,
-month, or year), change the page mode, the hotspot label, or force a
+month, or year), change the page mode, the per page options, the
+hotspot label, or force a
 render. It is a static page
 served by GitHub Pages (source in `portal/`), locked behind a fine
 grained personal access token that you create once (Contents and
@@ -100,7 +101,8 @@ or immediately if you press the EN button on the back of the frame.
 
 There is also a native Android app in `android/`, a private gallery
 version of the same remote: swipe between the seven pages, stamp one
-onto the frame, read today's poem in English, switch modes, or force a
+onto the frame, read today's poem in English, switch modes, tune the
+page options, or force a
 render. Build and sideload instructions in
 [docs/ANDROID_MACOS.md](docs/ANDROID_MACOS.md).
 
@@ -118,6 +120,17 @@ with your GitHub login (and 2FA) as the front door:
   - `"mode"`: `"auto"` (light by day, dark from 19:00), or pin it with
     `"dark"` or `"light"` until you change it back.
   - `"page"`: which page the frame shows, see [Pages](#pages) below.
+  - Per page options, all optional; leave a key out and the page
+    renders exactly as before (the first value is the default):
+    - `"year_lang"`: `"bilingual"`, `"en"`, or `"cn"`.
+    - `"year_footer"`: `"holidays"`, `"event"` (counts down to the next
+      event on the `ICS_URL` feed), or `"weather"` (today's outlook).
+      Either falls back to the holiday countdown when it has nothing to
+      show.
+    - `"landscape_scenery"`: `"lake"`, `"gorge"`, `"islands"`, or
+      `"night"`.
+    - `"month_week_start"`: `"monday"` or `"sunday"`.
+    - `"poem_lang"`: `"cn"` or `"en"`.
 - Force a refresh now: repo Actions tab, "Render daily calendar", "Run
   workflow". The mode dropdown there forces light or dark for that one
   render only; scheduled renders go back to following settings.json.

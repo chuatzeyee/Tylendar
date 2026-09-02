@@ -239,6 +239,7 @@ private fun TokenGate(error: String?, onSave: (String) -> Unit) {
 private fun Home(vm: AppViewModel) {
     val s = vm.settings
     var showHotspot by remember { mutableStateOf(false) }
+    var showOptionsFor by remember { mutableStateOf<String?>(null) }
     var showPoem by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
@@ -305,6 +306,7 @@ private fun Home(vm: AppViewModel) {
                             vm, pager,
                             cardHeight = availH - 177.dp,
                             onShowPoem = { showPoem = true },
+                            onShowOptions = { showOptionsFor = it },
                             modifier = Modifier.weight(11f).fillMaxHeight(),
                         )
                         Box(Modifier.weight(9f).fillMaxHeight()) {
@@ -327,6 +329,7 @@ private fun Home(vm: AppViewModel) {
                             vm, pager,
                             cardHeight = (availH - 340.dp).coerceAtLeast(220.dp),
                             onShowPoem = { showPoem = true },
+                            onShowOptions = { showOptionsFor = it },
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -355,6 +358,14 @@ private fun Home(vm: AppViewModel) {
             initial = s?.hotspot ?: "",
             onSave = vm::setHotspot,
             onDismiss = { showHotspot = false },
+        )
+    }
+    showOptionsFor?.let { page ->
+        PageOptionsSheet(
+            page = page,
+            settings = s,
+            onPick = vm::setOption,
+            onDismiss = { showOptionsFor = null },
         )
     }
     if (showSettings) {

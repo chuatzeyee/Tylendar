@@ -25,6 +25,37 @@ const val SETTINGS_PATH = "generator/settings.json"
 val PAGES = listOf("almanac", "poem", "character", "landscape", "weather", "month", "year")
 val MODES = listOf("auto", "light", "dark")
 
+/* Per-page render options; mirrors the portal. The first value is the
+   default, and an absent key renders exactly as before. */
+data class PageOption(
+    val key: String,
+    val label: String,
+    val values: List<String>,
+    val names: List<String>,
+)
+
+val PAGE_OPTIONS = mapOf(
+    "year" to listOf(
+        PageOption("year_lang", "LANGUAGE",
+            listOf("bilingual", "en", "cn"), listOf("MIXED", "ENGLISH", "CHINESE")),
+        PageOption("year_footer", "FOOTER",
+            listOf("holidays", "event", "weather"), listOf("HOLIDAYS", "CALENDAR", "WEATHER")),
+    ),
+    "landscape" to listOf(
+        PageOption("landscape_scenery", "SCENERY",
+            listOf("lake", "gorge", "islands", "night"),
+            listOf("LAKE", "GORGE", "ISLANDS", "NIGHT")),
+    ),
+    "month" to listOf(
+        PageOption("month_week_start", "WEEK STARTS ON",
+            listOf("monday", "sunday"), listOf("MONDAY", "SUNDAY")),
+    ),
+    "poem" to listOf(
+        PageOption("poem_lang", "LANGUAGE",
+            listOf("cn", "en"), listOf("CHINESE", "ENGLISH")),
+    ),
+)
+
 class GithubException(message: String) : Exception(message)
 
 data class RenderRun(val status: String, val conclusion: String?, val createdAt: String)
@@ -44,6 +75,8 @@ data class RepoSettings(val json: JsonObject, val sha: String) {
     val page get() = json["page"]?.jsonPrimitive?.contentOrNull ?: "almanac"
     val mode get() = json["mode"]?.jsonPrimitive?.contentOrNull ?: "auto"
     val hotspot get() = json["hotspot"]?.jsonPrimitive?.contentOrNull ?: ""
+    fun opt(o: PageOption) =
+        json[o.key]?.jsonPrimitive?.contentOrNull?.takeIf { it in o.values } ?: o.values.first()
 }
 
 class Github(private val token: () -> String?) {

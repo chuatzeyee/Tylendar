@@ -10,6 +10,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
@@ -147,6 +149,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (mode == s.mode) return
         previewOverride = optimisticPreview(s.page, mode)
         commit("mode", mode, "portal: update settings")
+    }
+
+    fun setOption(key: String, value: String) {
+        val s = settings ?: return
+        if (s.json[key]?.jsonPrimitive?.contentOrNull == value) return
+        commit(key, value, "portal: update settings")
     }
 
     fun setHotspot(label: String): Boolean {

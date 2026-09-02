@@ -125,10 +125,7 @@ def boat(d, cx, wy):
     d.line([(fx + 24, wy - 17), (fx + 24, wy + 2)], fill=BLACK, width=1)
 
 
-def render(d, hl, settings):
-    seed = d.isoformat()
-    img = Image.new("RGB", (W, H), WHITE)
-    dr = ImageDraw.Draw(img)
+def scene_lake(img, dr, seed):
     dr.ellipse([124, 116, 212, 204], fill=YELLOW)          # sun, high left
     for bx, by, s in ((350, 272, 7), (382, 260, 6), (410, 276, 5)):  # birds
         dr.line([(bx - s, by), (bx, by - s * 0.6)], fill=BLACK, width=2)
@@ -172,6 +169,159 @@ def render(d, hl, settings):
                fill=BLACK)
     for px, ph in ((430, 21), (492, 26), (548, 23), (608, 26)):
         pine(dr, px, top[px] + 3, ph)
+
+
+def scene_gorge(img, dr, seed):
+    """Steep gorge: two tall ridge bands, banks closing in from both
+    margins, a narrow channel of water with one boat threading it."""
+    dr.ellipse([124, 116, 212, 204], fill=YELLOW)
+    far, far_m = ridge(random.Random(seed + ":far"), 470, 160, 2.1,
+                       (220, 90, 42), band=16, wave=8)
+    mid, mid_m = ridge(random.Random(seed + ":mid"), 610, 130, 1.9,
+                       (190, 80, 36), band=16, wave=10)
+    for crest, mist in ((far, far_m), (mid, mid_m)):
+        fill_below(img, crest, BLACK)
+        fill_below(img, mist, WHITE)
+
+    spot = pavilion_spot(mid, far_m)
+    if spot is not None:
+        pavilion(dr, spot, mid[spot] + 2)
+
+    ybot, xl, xr = 856, 252, 388
+    bl = value_noise(random.Random(seed + ":bankl"), 90)
+    br = value_noise(random.Random(seed + ":bankr"), 90)
+    topl, topr = {}, {}
+    for x in range(0, xl):
+        t = (xl - x) / xl
+        topl[x] = ybot - 92 * (t * t * (3 - 2 * t)) ** 0.9 - bl[x] * 14 * t
+    for x in range(xr, W):
+        t = (x - xr) / (W - xr)
+        topr[x] = ybot - 74 * (t * t * (3 - 2 * t)) ** 0.9 - br[x] * 14 * t
+    dr.polygon([(x, topl[x]) for x in range(0, xl)] + [(xl - 1, ybot), (0, ybot)],
+               fill=BLACK)
+    dr.polygon([(x, topr[x]) for x in range(xr, W)] + [(W - 1, ybot), (xr, ybot)],
+               fill=BLACK)
+    for y, a, b in ((812, 266, 372), (838, 274, 356)):
+        dr.line([(a, y), (b, y)], fill=BLACK, width=1)
+    dr.line([(xl - 6, ybot), (xr + 6, ybot)], fill=BLACK, width=1)
+    boat(dr, random.Random(seed + ":boat").randint(300, 336), 776)
+    for px, ph in ((64, 25), (132, 22), (198, 26)):
+        pine(dr, px, topl[px] + 3, ph)
+    for px, ph in ((452, 24), (532, 27), (596, 22)):
+        pine(dr, px, topr[px] + 3, ph)
+
+
+def islet(img, dr, rng, cx, wy, w, h):
+    """Low mound of an island on its own waterline; returns the crest
+    so pines can stand on it."""
+    n = value_noise(rng, 60)
+    x0, x1 = int(cx - w / 2), int(cx + w / 2)
+    top = {}
+    for x in range(x0, x1 + 1):
+        t = (x - x0) / (x1 - x0)
+        arc = (4 * t * (1 - t)) ** 0.8
+        top[x] = wy - h * arc - n[min(max(x, 0), W - 1)] * 10 * arc
+    dr.polygon([(x, top[x]) for x in range(x0, x1 + 1)]
+               + [(x1, wy), (x0, wy)], fill=BLACK)
+    dr.line([(max(LEFT, x0 - 26), wy), (min(RIGHT, x1 + 26), wy)],
+            fill=BLACK, width=1)
+    return top
+
+
+def scene_islands(img, dr, seed):
+    """Open water: one low far ridge, then islets with pines, boats
+    scattered between them."""
+    dr.ellipse([124, 116, 212, 204], fill=YELLOW)
+    for bx, by, s in ((350, 272, 7), (382, 260, 6), (410, 276, 5)):
+        dr.line([(bx - s, by), (bx, by - s * 0.6)], fill=BLACK, width=2)
+        dr.line([(bx, by - s * 0.6), (bx + s, by)], fill=BLACK, width=2)
+
+    far, far_m = ridge(random.Random(seed + ":far"), 450, 70, 1.6,
+                       (240, 100, 46), band=18, wave=8)
+    fill_below(img, far, BLACK)
+    fill_below(img, far_m, WHITE)
+
+    for x, y, ln in ((80, 560, 90), (300, 585, 60), (470, 570, 70),
+                     (120, 664, 70), (420, 684, 56),
+                     (90, 800, 60), (380, 812, 48)):
+        dr.line([(x, y), (x + ln, y)], fill=BLACK, width=1)
+    for x, y, ln in ((150, 610, 52), (176, 626, 40)):
+        dr.rectangle([x, y, x + ln, y + 2], fill=YELLOW)
+
+    rng = random.Random(seed + ":isles")
+    for cx, wy, w, h, pxs in (
+            (150 + rng.randint(-20, 20), 648, 190, 42, (-34, 12)),
+            (462 + rng.randint(-20, 20), 748, 210, 50, (-20, 30)),
+            (240 + rng.randint(-20, 20), 856, 250, 56, (-46, 0, 44))):
+        top = islet(img, dr, random.Random(seed + f":isle{wy}"), cx, wy, w, h)
+        for off in pxs:
+            x = min(max(cx + off, min(top)), max(top))
+            pine(dr, x, top[x] + 3, rng.randint(18, 24))
+    rb = random.Random(seed + ":boat")
+    boat(dr, rb.randint(330, 420), 620)
+    boat(dr, rb.randint(90, 130), 730)
+
+
+def scene_night(img, dr, seed):
+    """Nightfall: crescent moon, a few stars, no glints, sparser water,
+    the pavilion window lit."""
+    dr.ellipse([124, 116, 212, 204], fill=YELLOW)
+    dr.ellipse([148, 100, 236, 188], fill=WHITE)           # the bite
+    rs = random.Random(seed + ":stars")
+    stars = 0
+    while stars < 5:
+        x, y = rs.randint(70, 570), rs.randint(56, 236)
+        if abs(x - 180) < 90 and abs(y - 150) < 90:
+            continue
+        dr.ellipse([x - 2, y - 2, x + 2, y + 2], fill=YELLOW)
+        stars += 1
+
+    far, far_m = ridge(random.Random(seed + ":far"), 480, 106, 1.6,
+                       (240, 100, 46), band=18, wave=9)
+    mid, mid_m = ridge(random.Random(seed + ":mid"), 614, 80, 1.5,
+                       (210, 90, 40), wave=11)
+    near, near_m = ridge(random.Random(seed + ":near"), 700, 50, 1.3,
+                         (180, 80, 36), band=20, wave=4)
+    for crest, mist in ((far, far_m), (mid, mid_m), (near, near_m)):
+        fill_below(img, crest, BLACK)
+        fill_below(img, mist, WHITE)
+
+    spot = pavilion_spot(mid, far_m)
+    if spot is not None:
+        gy = mid[spot] + 2
+        pavilion(dr, spot, gy)
+        dr.rectangle([spot - 10, gy - 18, spot + 9, gy - 4], fill=YELLOW)
+
+    crest_pines(dr, random.Random(seed + ":pines"), near, 8, 20, W - 21, 12, 16,
+                clear=mid_m)
+
+    for x, y, ln in ((92, 726, 74), (452, 738, 56), (258, 834, 44)):
+        dr.line([(x, y), (x + ln, y)], fill=BLACK, width=1)
+    dr.line([(186, 780), (352, 780)], fill=BLACK, width=1)
+    boat(dr, random.Random(seed + ":boat").randint(222, 316), 780)
+
+    bx0, ybot = 330, 856
+    bn = value_noise(random.Random(seed + ":bank"), 90)
+    top = {}
+    for x in range(bx0, W):
+        t = (x - bx0) / (W - bx0)
+        top[x] = ybot - 56 * (t * t * (3 - 2 * t)) ** 0.9 - bn[x] * 14 * t
+    dr.line([(150, ybot), (bx0 + 40, ybot)], fill=BLACK, width=1)
+    dr.polygon([(x, top[x]) for x in range(bx0, W)] + [(W - 1, ybot), (bx0, ybot)],
+               fill=BLACK)
+    for px, ph in ((430, 21), (492, 26), (548, 23), (608, 26)):
+        pine(dr, px, top[px] + 3, ph)
+
+
+SCENES = {"lake": scene_lake, "gorge": scene_gorge,
+          "islands": scene_islands, "night": scene_night}
+
+
+def render(d, hl, settings):
+    seed = d.isoformat()
+    img = Image.new("RGB", (W, H), WHITE)
+    dr = ImageDraw.Draw(img)
+    SCENES.get(settings.get("landscape_scenery"), scene_lake)(img, dr, seed)
 
     # red seal, upper right, lunar day of month under it
     dr.rectangle([RIGHT - 56, 60, RIGHT, 176], fill=RED)

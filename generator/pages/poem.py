@@ -14,7 +14,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from generate import (W, H, BLACK, WHITE, RED, YELLOW, MONTH_ABBR,
-                      draw_text, latin, serif)
+                      draw_text, latin, serif, text_width)
 
 POEMS = json.loads((Path(__file__).resolve().parent.parent / "data" /
                     "poems.json").read_text(encoding="utf-8"))
@@ -35,6 +35,13 @@ def draw_col(img, cx, cy0, text, font, fill, pitch):
     """One vertical column on a strict grid: same box, same pitch."""
     for k, ch in enumerate(text):
         draw_text(img, (cx, cy0 + k * pitch), ch, font, fill, anchor="mm")
+
+
+def fit_latin(text, size, weight, max_w):
+    """Largest Canela size (floor 13) that keeps the line on the sheet."""
+    while size > 13 and text_width(text, latin(size, weight)) > max_w:
+        size -= 1
+    return latin(size, weight)
 
 
 def render(d, hl, settings):
@@ -66,21 +73,39 @@ def render(d, hl, settings):
 
     # The ruled sheet: hairline frame plus column rules.
     dr.rectangle([L, BOX_T, R, BOX_B], outline=BLACK, width=1)
-    for i in range(1, ncol):
-        x = round(L + i * pitch_x)
-        dr.line([x, BOX_T, x, BOX_B], fill=BLACK, width=1)
+    english = poem.get("english") if settings.get("poem_lang") == "en" else None
+    if english:
+        # English: horizontal centered lines on the open sheet, the
+        # silk band and colophon-free seal keeping the Chinese frame.
+        mid = (L + R) // 2
+        title_en = (poem.get("title_en") or poem["title"]).replace("'", "\u2019")
+        draw_text(img, (mid, 214), title_en,
+                  fit_latin(title_en, 26, 700, R - L - 36), BLACK,
+                  anchor="ms", tracking=1)
+        n = len(english)
+        pitch = 46 if n > 6 else 62
+        cy0 = 470 - (n - 1) * pitch // 2
+        for k, line in enumerate(english):
+            line = line.replace("'", "\u2019")
+            draw_text(img, (mid, cy0 + k * pitch), line,
+                      fit_latin(line, 19, 450, R - L - 28), BLACK,
+                      anchor="ms", tracking=1)
+    else:
+        for i in range(1, ncol):
+            x = round(L + i * pitch_x)
+            dr.line([x, BOX_T, x, BOX_B], fill=BLACK, width=1)
 
-    # The poem: one ruled column per line, right to left, strict grid.
-    f_poem = serif(POEM_SIZE[ncol], 500)
-    for i, line in enumerate(lines):
-        draw_col(img, col_cx(i), POEM_CY0, line, f_poem, BLACK, POEM_PITCH_Y)
+        # The poem: one ruled column per line, right to left, strict grid.
+        f_poem = serif(POEM_SIZE[ncol], 500)
+        for i, line in enumerate(lines):
+            draw_col(img, col_cx(i), POEM_CY0, line, f_poem, BLACK, POEM_PITCH_Y)
 
-    # Colophon: lunar date below the two leftmost columns.
-    f_sig = serif(22, 500)
-    draw_col(img, col_cx(ncol - 2), SIG_CY0, hl["ganzhi_year"] + "年",
-             f_sig, BLACK, SIG_PITCH_Y)
-    draw_col(img, col_cx(ncol - 1), SIG_CY0, hl["lunar_md"],
-             f_sig, BLACK, SIG_PITCH_Y)
+        # Colophon: lunar date below the two leftmost columns.
+        f_sig = serif(22, 500)
+        draw_col(img, col_cx(ncol - 2), SIG_CY0, hl["ganzhi_year"] + "年",
+                 f_sig, BLACK, SIG_PITCH_Y)
+        draw_col(img, col_cx(ncol - 1), SIG_CY0, hl["lunar_md"],
+                 f_sig, BLACK, SIG_PITCH_Y)
 
     # The red moment: seal stamped across the colophon rule. Leap-month
     # lunar dates run five characters, so the seal steps down clear of

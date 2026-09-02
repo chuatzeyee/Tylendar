@@ -71,6 +71,7 @@ import androidx.compose.ui.util.lerp as flerp
 import coil3.compose.AsyncImage
 import com.chuatzeyee.tylendar.AppViewModel
 import com.chuatzeyee.tylendar.PAGES
+import com.chuatzeyee.tylendar.PAGE_OPTIONS
 import com.chuatzeyee.tylendar.RAW
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -85,6 +86,7 @@ internal fun Gallery(
     pager: PagerState,
     cardHeight: Dp,
     onShowPoem: () -> Unit,
+    onShowOptions: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val s = vm.settings
@@ -291,6 +293,17 @@ internal fun Gallery(
                     exit = fadeOut(tween(140)),
                 ) {
                     Chip("IN ENGLISH", onClick = onShowPoem)
+                }
+                /* Only on the committed page: options change what the
+                   frame renders, and the slot cannot fit this chip next
+                   to the commit button anyway. */
+                AnimatedVisibility(
+                    visible = PAGES[pager.currentPage] in PAGE_OPTIONS &&
+                        pager.currentPage == committedIdx,
+                    enter = fadeIn(tween(200)) + expandHorizontally(tween(200)),
+                    exit = fadeOut(tween(140)),
+                ) {
+                    Chip("OPTIONS") { onShowOptions(PAGES[pager.currentPage]) }
                 }
             }
         }
