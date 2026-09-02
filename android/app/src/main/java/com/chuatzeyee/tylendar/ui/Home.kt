@@ -98,6 +98,7 @@ internal val PAGE_ZH = mapOf(
     "weather" to "天氣",
     "month" to "月曆",
     "year" to "年曆",
+    "joke" to "一罵",
 )
 
 private val PAGE_KEYS = mapOf(
@@ -108,6 +109,7 @@ private val PAGE_KEYS = mapOf(
     Key.W to "weather",
     Key.M to "month",
     Key.Y to "year",
+    Key.J to "joke",
 )
 
 @Composable

@@ -185,30 +185,36 @@ fun PageOptionsSheet(
 
 @Composable
 private fun OptionStrip(o: PageOption, selected: String?, onPick: (String, String) -> Unit) {
-    Row(Modifier.fillMaxWidth().height(36.dp)) {
-        o.values.forEachIndexed { i, v ->
-            val active = v == selected
-            val fg by animateColorAsState(
-                if (active) Ink else InkFaint, tween(160), label = "optFg",
-            )
-            val bar by animateColorAsState(
-                if (active) Ink else Color.Transparent, tween(160), label = "optBar",
-            )
-            Column(
-                Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .clickable(
-                        remember { MutableInteractionSource() },
-                        indication = null,
-                    ) { onPick(o.key, v) },
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Text(o.names[i], style = MicroStyle, color = fg)
-                Spacer(Modifier.height(5.dp))
-                Box(Modifier.width(22.dp).height(2.dp).background(bar))
+    /* More than four values wraps to rows of three; short rows keep
+       three-column cells so labels stay aligned. */
+    val perRow = if (o.values.size > 4) 3 else o.values.size
+    o.values.zip(o.names).chunked(perRow).forEach { row ->
+        Row(Modifier.fillMaxWidth().height(36.dp)) {
+            row.forEach { (v, name) ->
+                val active = v == selected
+                val fg by animateColorAsState(
+                    if (active) Ink else InkFaint, tween(160), label = "optFg",
+                )
+                val bar by animateColorAsState(
+                    if (active) Ink else Color.Transparent, tween(160), label = "optBar",
+                )
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable(
+                            remember { MutableInteractionSource() },
+                            indication = null,
+                        ) { onPick(o.key, v) },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Text(name, style = MicroStyle, color = fg)
+                    Spacer(Modifier.height(5.dp))
+                    Box(Modifier.width(22.dp).height(2.dp).background(bar))
+                }
             }
+            repeat(perRow - row.size) { Spacer(Modifier.weight(1f)) }
         }
     }
 }

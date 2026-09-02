@@ -23,7 +23,7 @@ const val API = "https://api.github.com/repos/$OWNER/$REPO"
 const val RAW = "https://raw.githubusercontent.com/$OWNER/$REPO/main"
 const val SETTINGS_PATH = "generator/settings.json"
 
-val PAGES = listOf("almanac", "poem", "character", "landscape", "weather", "month", "year")
+val PAGES = listOf("almanac", "poem", "character", "landscape", "weather", "month", "year", "joke")
 val MODES = listOf("auto", "light", "dark")
 
 /* Per-page render options; mirrors the portal. The first value is the
@@ -54,6 +54,13 @@ val PAGE_OPTIONS = mapOf(
     "poem" to listOf(
         PageOption("poem_lang", "LANGUAGE",
             listOf("cn", "en"), listOf("CHINESE", "ENGLISH")),
+    ),
+    "joke" to listOf(
+        PageOption("joke_word", "WORD",
+            listOf("daily", "jibai", "kanina", "lanjiao", "nabei",
+                "jiaksai", "sibei", "walao", "siao"),
+            listOf("DAILY", "JI BAI", "KAN NI NA", "LAN JIAO", "NA BEH",
+                "JIAK SAI", "SI BEH", "WA LAO", "SIAO")),
     ),
 )
 

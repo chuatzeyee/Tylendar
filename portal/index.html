@@ -158,7 +158,7 @@
 
   .field { margin-top: 16px; }
   .field > label, .field-label { display: block; font-size: 14px; font-weight: 550; margin-bottom: 6px; }
-  input[type=text], input[type=password] {
+  input[type=text], input[type=password], select {
     width: 100%; padding: 10px 11px; font: inherit; font-size: 15px;
     background: var(--paper); color: var(--ink);
     border: 1px solid var(--hairline); border-radius: 0;
@@ -402,6 +402,22 @@
           <span class="badge">Current</span>
         </label>
 
+        <label class="tile">
+          <input type="radio" name="page" value="joke">
+          <svg class="thumb" viewBox="0 0 40 60" aria-hidden="true">
+            <rect class="ink" x="11" y="9" width="3" height="17"/>
+            <rect class="ink" x="6" y="15.5" width="13" height="3"/>
+            <rect class="ink" x="25.5" y="9" width="3" height="17"/>
+            <rect class="ink" x="20.5" y="15.5" width="13" height="3"/>
+            <line class="hl" x1="7" y1="34" x2="33" y2="34"/>
+            <rect class="chip" x="7" y="38.5" width="13" height="4"/>
+            <rect class="bar" x="7" y="46.5" width="16" height="3"/>
+            <rect class="red" x="27.5" y="44.5" width="5.5" height="5.5"/>
+          </svg>
+          <span class="names"><span class="zh">一罵</span><span class="en">Joke</span></span>
+          <span class="badge">Current</span>
+        </label>
+
       </div>
     </div>
     <p class="hint">Tap a page to switch. The frame picks it up at its next wake (00:20, 07:30, 13:00, 19:00), or straight away with the EN button.</p>
@@ -458,6 +474,20 @@
         <label><input type="radio" name="poem_lang" value="cn" checked><span>Chinese</span></label>
         <label><input type="radio" name="poem_lang" value="en"><span>English</span></label>
       </div>
+    </div>
+    <div class="field" data-page="joke" hidden>
+      <label for="joke-word">Joke word</label>
+      <select id="joke-word" name="joke_word">
+        <option value="daily" selected>A different one each day</option>
+        <option value="jibai">ji bai, Cheese Pie</option>
+        <option value="kanina">kan ni na, Kenny Nah</option>
+        <option value="lanjiao">lan jiao, Long John</option>
+        <option value="nabei">na beh, Nah Bay</option>
+        <option value="jiaksai">jiak sai, Jack Sigh</option>
+        <option value="sibei">si beh, Say Buy</option>
+        <option value="walao">wa lao, Wah Lau</option>
+        <option value="siao">siao, See Ow</option>
+      </select>
     </div>
     <div class="field">
       <label for="hotspot">Hotspot label</label>
@@ -665,12 +695,14 @@ const PAGE_OPTS = {
   landscape_scenery: ["lake", "gorge", "islands", "night"],
   month_week_start: ["monday", "sunday"],
   poem_lang: ["cn", "en"],
+  joke_word: ["daily", "jibai", "kanina", "lanjiao", "nabei", "jiaksai", "sibei", "walao", "siao"],
 };
 
 function pickedOpts() {
   const out = {};
   for (const key of Object.keys(PAGE_OPTS)) {
-    out[key] = document.querySelector("input[name=" + key + "]:checked").value;
+    out[key] = document.querySelector(
+      "select[name=" + key + "], input[name=" + key + "]:checked").value;
   }
   return out;
 }
@@ -685,7 +717,9 @@ async function loadSettings() {
     $("hotspot").value = typeof s.hotspot === "string" ? s.hotspot : "";
     for (const [key, values] of Object.entries(PAGE_OPTS)) {
       const v = values.includes(s[key]) ? s[key] : values[0];
-      document.querySelector('input[name=' + key + '][value="' + v + '"]').checked = true;
+      const sel = document.querySelector("select[name=" + key + "]");
+      if (sel) sel.value = v;
+      else document.querySelector('input[name=' + key + '][value="' + v + '"]').checked = true;
     }
     currentPage = PAGES.includes(s.page) ? s.page : "almanac";
     layoutPageTiles();
@@ -758,7 +792,7 @@ async function saveSettings() {
 
 /* ---------- page picker ---------- */
 
-const PAGES = ["almanac", "poem", "character", "landscape", "weather", "month", "year"];
+const PAGES = ["almanac", "poem", "character", "landscape", "weather", "month", "year", "joke"];
 let currentPage = "almanac";
 
 /* Move the current page's tile into the "now showing" slot and the
