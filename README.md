@@ -173,8 +173,10 @@ render picks it up, or force one from the Actions tab.
   polite English pun for the meaning and two usage examples. The
   `joke_word` option pins a favourite.
 - `photo`: a photo a day from `generator/photos/`, dithered down to the
-  panel's four colors and matted like a small gallery print. Drop your
-  own photos in that folder to build the rotation.
+  panel's four colors and matted like a small gallery print. Add and
+  remove photos from the portal (they are shrunk in the browser before
+  upload), or drop files straight into that folder. Mind that the repo
+  is public, so any photo in the rotation is too.
 - `flora`: the Four Gentlemen of ink painting, one plant a season (plum
   blossom in winter, orchid in spring, bamboo in summer, chrysanthemum
   in autumn), grown procedurally from the date so each day is a new

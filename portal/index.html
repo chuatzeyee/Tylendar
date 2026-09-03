@@ -205,6 +205,11 @@
   li a { color: var(--red); }
   .row { display: flex; gap: 10px; }
   .row button { flex: 1; }
+
+  .photo-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .photo-row img { width: 46px; height: 46px; object-fit: cover; border: 1px solid var(--hairline); }
+  .photo-row .name { flex: 1; font-size: 13.5px; overflow-wrap: anywhere; }
+  .photo-row button { width: auto; margin: 0; padding: 6px 10px; font-size: 12.5px; }
 </style>
 </head>
 <body>
@@ -531,6 +536,14 @@
       </div>
       <p class="hint">Season follows the Four Gentlemen: plum in winter, orchid in spring, bamboo in summer, chrysanthemum in autumn.</p>
     </div>
+    <div class="field" data-page="photo" hidden>
+      <span class="field-label">Photos</span>
+      <p class="hint">One photo a day, rotating through this list. The repo is public, so anything added here is visible to anyone. With no photos the frame falls back to the almanac.</p>
+      <div id="photo-list"></div>
+      <input type="file" id="photo-file" accept="image/*" multiple hidden>
+      <button type="button" class="quiet" id="photo-add">Add photos</button>
+      <div class="status" id="photo-status" role="status"></div>
+    </div>
     <div class="field">
       <label for="hotspot">Hotspot label</label>
       <input type="text" id="hotspot" maxlength="24" autocomplete="off" spellcheck="false">
@@ -833,6 +846,147 @@ async function saveSettings() {
   }
 }
 
+/* ---------- photo manager ---------- */
+
+const PHOTOS_DIR = "generator/photos";
+const PHOTO_MAX_EDGE = 1600;
+let photosLoaded = false;
+
+async function photosOnRepo() {
+  try {
+    const files = await gh("/contents/" + PHOTOS_DIR + "?ref=main");
+    return files.filter((f) => f.type === "file" && /\.(jpe?g|png)$/i.test(f.name));
+  } catch (e) {
+    if (e.status === 404) return [];
+    throw e;
+  }
+}
+
+async function loadPhotos() {
+  photosLoaded = true;
+  const list = $("photo-list");
+  const status = $("photo-status");
+  let files;
+  try {
+    files = await photosOnRepo();
+  } catch (e) {
+    status.textContent = e.message;
+    status.classList.add("err");
+    return;
+  }
+  list.textContent = "";
+  for (const f of files) {
+    const row = document.createElement("div");
+    row.className = "photo-row";
+    const img = document.createElement("img");
+    img.src = RAW + "/" + f.path + "?t=" + Date.now();
+    img.alt = f.name;
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = f.name;
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "quiet";
+    del.textContent = "Remove";
+    del.addEventListener("click", () => removePhoto(f, del));
+    row.append(img, name, del);
+    list.appendChild(row);
+  }
+}
+
+async function removePhoto(f, btn) {
+  if (!(await needToken())) return;
+  if (!confirm("Remove " + f.name + " from the rotation?")) return;
+  const status = $("photo-status");
+  status.classList.remove("err");
+  status.textContent = "Removing " + f.name;
+  btn.disabled = true;
+  try {
+    await gh("/contents/" + f.path, {
+      method: "DELETE",
+      body: JSON.stringify({ message: "portal: remove photo " + f.name, sha: f.sha }),
+    });
+    status.textContent = "Removed. The next render drops it.";
+    refreshPanelMeta();
+  } catch (e) {
+    btn.disabled = false;
+    status.textContent = e.message;
+    status.classList.add("err");
+    return;
+  }
+  loadPhotos();
+}
+
+/* Shrink client side so the repo stays small; the generator dithers it
+   down to four colors anyway, so 1600px is already generous. */
+async function shrinkPhoto(file) {
+  let bmp;
+  try {
+    bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
+  } catch {
+    try {
+      bmp = await createImageBitmap(file);
+    } catch {
+      throw new Error("Could not read " + file.name + ". Try a JPG or PNG.");
+    }
+  }
+  const scale = Math.min(1, PHOTO_MAX_EDGE / Math.max(bmp.width, bmp.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bmp.width * scale));
+  canvas.height = Math.max(1, Math.round(bmp.height * scale));
+  canvas.getContext("2d").drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  bmp.close();
+  const blob = await new Promise((r) => canvas.toBlob(r, "image/jpeg", 0.85));
+  if (!blob) throw new Error("Could not encode " + file.name + ".");
+  const dataUrl = await new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(fr.result);
+    fr.onerror = () => rej(new Error("Could not read " + file.name + "."));
+    fr.readAsDataURL(blob);
+  });
+  return dataUrl.split(",", 2)[1];
+}
+
+function photoName(file, taken) {
+  const stem = (file.name.replace(/\.[^.]*$/, "").toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "photo").slice(0, 40);
+  let name = stem + ".jpg";
+  for (let i = 2; taken.has(name); i++) name = stem + "-" + i + ".jpg";
+  taken.add(name);
+  return name;
+}
+
+async function addPhotos(files) {
+  if (!files.length) return;
+  if (!(await needToken())) return;
+  const status = $("photo-status");
+  status.classList.remove("err");
+  const btn = $("photo-add");
+  btn.disabled = true;
+  let done = 0;
+  try {
+    const taken = new Set((await photosOnRepo()).map((f) => f.name));
+    for (const file of files) {
+      const name = photoName(file, taken);
+      status.textContent = "Uploading " + name + " (" + (done + 1) + " of " + files.length + ")";
+      const content = await shrinkPhoto(file);
+      await gh("/contents/" + PHOTOS_DIR + "/" + name, {
+        method: "PUT",
+        body: JSON.stringify({ message: "portal: add photo " + name, content }),
+      });
+      done += 1;
+    }
+    status.textContent = "Added " + done + (done === 1 ? " photo. " : " photos. ") +
+      "The next render picks it up.";
+  } catch (e) {
+    status.textContent = (done ? "Added " + done + ", then: " : "") + e.message;
+    status.classList.add("err");
+  }
+  btn.disabled = false;
+  loadPhotos();
+  refreshPanelMeta();
+}
+
 /* ---------- page picker ---------- */
 
 const PAGES = ["almanac", "poem", "character", "landscape", "weather", "month", "year", "joke", "photo", "flora"];
@@ -854,6 +1008,7 @@ function layoutPageTiles() {
     f.hidden = f.dataset.page !== currentPage;
   });
   updatePoemCard();
+  if (currentPage === "photo" && !photosLoaded) loadPhotos();
 }
 
 /* ---------- today's poem, in English ---------- */
@@ -1090,6 +1245,11 @@ $("save").addEventListener("click", saveSettings);
 $("render").addEventListener("click", renderNow);
 $("page-radios").addEventListener("change", (e) => {
   if (e.target.name === "page" && e.target.value !== currentPage) setPage(e.target.value);
+});
+$("photo-add").addEventListener("click", () => $("photo-file").click());
+$("photo-file").addEventListener("change", (e) => {
+  addPhotos([...e.target.files]);
+  e.target.value = "";
 });
 $("tok-btn").addEventListener("click", openTokenDialog);
 $("tok-save").addEventListener("click", saveToken);
