@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" id="meta-theme" content="#f7f3ea">
 <title>Tylendar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,6 +14,7 @@
     --paper: #f7f3ea;
     --ink: #1a1a1a;
     --red: #ba2029;
+    --red-ink: #ba2029;
     --yellow: #ecb70f;
     --hairline: rgba(26, 26, 26, 0.9);
     --faint: rgba(26, 26, 26, 0.72);
@@ -21,6 +23,7 @@
   body.dark {
     --paper: #141414;
     --ink: #f2ede2;
+    --red-ink: #e2606a;
     --hairline: rgba(242, 237, 226, 0.9);
     --faint: rgba(242, 237, 226, 0.55);
     --card: #1c1c1c;
@@ -68,10 +71,12 @@
     border: 3px solid #101010; padding: 12px;
     box-shadow: 0 1px 0 rgba(0,0,0,0.25);
   }
-  .frame img { display: block; width: 100%; aspect-ratio: 2 / 3; background: #eee; }
+  .frame a { display: block; }
+  .frame img { display: block; width: 100%; aspect-ratio: 2 / 3; background: #eee; cursor: zoom-in; }
+  body.dark .frame { box-shadow: 0 0 0 1px rgba(242, 237, 226, 0.3); }
   .meta { text-align: center; font-size: 14px; }
   .meta .state { font-weight: 550; }
-  .meta .state.busy { color: var(--red); }
+  .meta .state.busy { color: var(--red-ink); }
   .meta .wake { color: var(--faint); font-size: 13px; margin-top: 3px; }
 
   .seg {
@@ -79,14 +84,14 @@
     border: 1px solid var(--hairline);
   }
   .seg label {
-    text-align: center; padding: 9px 4px; font-size: 14px;
+    text-align: center; padding: 12px 4px; font-size: 14px;
     cursor: pointer; border-left: 1px solid var(--hairline); user-select: none;
   }
   .seg label:first-child { border-left: 0; }
   .seg input { position: absolute; opacity: 0; pointer-events: none; }
   .seg input:checked + span { font-weight: 650; }
   .seg label:has(input:checked) { background: var(--ink); color: var(--paper); }
-  .seg label:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: -2px; }
+  .seg label:has(input:focus-visible) { outline: 2px solid var(--red-ink); outline-offset: -2px; }
 
   /* Page picker: tiny page thumbnails, the current one on top */
   .group-label {
@@ -108,16 +113,17 @@
   }
   .tile input { position: absolute; opacity: 0; pointer-events: none; }
   .tile:has(input:checked) {
-    border-color: var(--red);
-    outline: 1px solid var(--red);
+    border-color: var(--red-ink);
+    outline: 1px solid var(--red-ink);
     outline-offset: 2px;
   }
-  .tile:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: -2px; }
+  .tile:has(input:focus-visible) { outline: 2px solid var(--red-ink); outline-offset: -2px; }
   .tile:has(input:disabled) { opacity: 0.55; cursor: default; }
   .tile.now {
     padding: 12px 14px 12px 10px; gap: 14px;
     background: rgba(186, 32, 41, 0.035);
   }
+  body.dark .tile.now { background: rgba(226, 96, 106, 0.08); }
   .tile.now .thumb { width: 52px; height: 78px; }
   .tile.now .names .zh { font-size: 22px; }
   .badge {
@@ -154,12 +160,12 @@
     font-variant: small-caps; text-transform: lowercase;
     color: var(--faint); margin-top: 2px;
   }
-  .tile:has(input:checked) .names .zh { color: var(--red); }
+  .tile:has(input:checked) .names .zh { color: var(--red-ink); }
 
   .field { margin-top: 16px; }
   .field > label, .field-label { display: block; font-size: 14px; font-weight: 550; margin-bottom: 6px; }
   input[type=text], input[type=password], select {
-    width: 100%; padding: 10px 11px; font: inherit; font-size: 15px;
+    width: 100%; padding: 10px 11px; font: inherit; font-size: 16px;
     background: var(--paper); color: var(--ink);
     border: 1px solid var(--hairline); border-radius: 0;
   }
@@ -180,7 +186,7 @@
   }
 
   .status { font-size: 13.5px; margin-top: 10px; min-height: 1.3em; }
-  .status.err { color: var(--red); }
+  .status.err { color: var(--red-ink); }
   .note { font-size: 13.5px; color: var(--faint); }
   .note + .note { margin-top: 8px; }
 
@@ -191,8 +197,8 @@
   footer .tok { display: flex; align-items: center; gap: 8px; }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--yellow); display: inline-block; }
   .dot.on { background: #2e8b57; }
-  footer button { width: auto; margin: 0; padding: 5px 10px; font-size: 12.5px; }
-  footer a { color: inherit; }
+  footer button { width: auto; margin: 0; padding: 12px 14px; font-size: 12.5px; }
+  footer a { color: inherit; display: inline-block; padding: 14px 6px; margin: -14px 0; }
 
   dialog {
     border: 1px solid var(--hairline); background: var(--card); color: var(--ink);
@@ -202,14 +208,14 @@
   dialog h2 { margin-bottom: 4px; }
   ol { padding-left: 20px; font-size: 14px; margin: 12px 0; }
   li { margin-bottom: 8px; }
-  li a { color: var(--red); }
-  .row { display: flex; gap: 10px; }
-  .row button { flex: 1; }
+  li a { color: var(--red-ink); }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .row button { flex: 1 1 auto; white-space: nowrap; }
 
   .photo-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
   .photo-row img { width: 46px; height: 46px; object-fit: cover; border: 1px solid var(--hairline); }
   .photo-row .name { flex: 1; font-size: 13.5px; overflow-wrap: anywhere; }
-  .photo-row button { width: auto; margin: 0; padding: 6px 10px; font-size: 12.5px; }
+  .photo-row button { width: auto; margin: 0; padding: 12px; font-size: 12.5px; }
 </style>
 </head>
 <body>
@@ -231,7 +237,7 @@
       <li>Permissions: <strong>Contents, Read and write</strong> and <strong>Actions, Read and write</strong>.</li>
       <li>Generate it, copy it, paste it below.</li>
     </ol>
-    <input type="password" id="gate-input" placeholder="github_pat_..." autocomplete="off" aria-label="Personal access token">
+    <input type="password" id="gate-input" placeholder="github_pat_..." autocomplete="off" enterkeyhint="go" aria-label="Personal access token">
     <button id="gate-unlock">Unlock</button>
     <div class="status" id="gate-status" role="status"></div>
   </section>
@@ -247,10 +253,10 @@
   </header>
 
   <section id="panel-card">
-    <h2>On the panel</h2>
-    <div class="frame"><img id="preview" alt="Current calendar page"></div>
+    <h2>On the frame</h2>
+    <div class="frame"><a id="preview-link" target="_blank" rel="noopener"><img id="preview" alt="Current calendar page"></a></div>
     <div class="meta">
-      <div class="state" id="render-state">Checking</div>
+      <div class="state" id="render-state" role="status">Checking</div>
       <div class="wake" id="wake-line"></div>
     </div>
   </section>
@@ -454,16 +460,42 @@
           <span class="badge">Current</span>
         </label>
 
+        <label class="tile">
+          <input type="radio" name="page" value="quote">
+          <svg class="thumb" viewBox="0 0 40 60" aria-hidden="true">
+            <polygon class="ink" points="8,10 13,10 10.5,20 7,20"/>
+            <polygon class="ink" points="16,10 21,10 18.5,20 15,20"/>
+            <rect class="ink" x="7" y="26" width="26" height="3"/>
+            <rect class="ink" x="7" y="32" width="26" height="3"/>
+            <rect class="ink" x="7" y="38" width="18" height="3"/>
+            <rect class="bar" x="7" y="44.5" width="10" height="2"/>
+            <rect class="red" x="27.5" y="42" width="5.5" height="5.5"/>
+            <line class="hl" x1="7" y1="50" x2="33" y2="50"/>
+            <rect class="bar" x="7" y="53" width="14" height="3"/>
+          </svg>
+          <span class="names"><span class="zh">冷語</span><span class="en">Quote</span></span>
+          <span class="badge">Current</span>
+        </label>
+
       </div>
     </div>
-    <p class="hint">Tap a page to switch. The frame picks it up at its next wake (00:20, 07:30, 13:00, 19:00), or straight away with the EN button.</p>
+    <p class="hint">Tap a page to switch. The frame picks it up at its next wake (00:20, 07:30, 13:00, 19:00), or straight away with the EN button on the board behind it.</p>
     <div class="status" id="page-status" role="status"></div>
+  </section>
+
+  <section data-page="photo" hidden>
+    <h2>Photos</h2>
+    <p class="hint">One photo a day, rotating through this list. The repo is public, so anything added here is visible to anyone. With no photos the frame falls back to the almanac.</p>
+    <div id="photo-list"></div>
+    <input type="file" id="photo-file" accept="image/*" multiple hidden>
+    <button type="button" class="quiet" id="photo-add">Add photos</button>
+    <div class="status" id="photo-status" role="status"></div>
   </section>
 
   <section>
     <h2>Settings</h2>
     <div class="field" style="margin-top:0">
-      <span class="field-label" id="mode-label">Page mode</span>
+      <span class="field-label" id="mode-label">Light or dark</span>
       <div class="seg" role="radiogroup" aria-labelledby="mode-label">
         <label><input type="radio" name="mode" value="auto" checked><span>Auto</span></label>
         <label><input type="radio" name="mode" value="light"><span>Light</span></label>
@@ -471,6 +503,7 @@
       </div>
       <p class="hint">Auto is light by day and dark from 19:00. Light or dark pins it until you change it back.</p>
     </div>
+    <p class="group-label" id="page-opts" hidden></p>
     <div class="field" data-page="year" hidden>
       <span class="field-label" id="yl-label">Year page language</span>
       <div class="seg" role="radiogroup" aria-labelledby="yl-label">
@@ -486,7 +519,7 @@
         <label><input type="radio" name="year_footer" value="event"><span>Calendar</span></label>
         <label><input type="radio" name="year_footer" value="weather"><span>Weather</span></label>
       </div>
-      <p class="hint">Calendar counts down to the next event on the ICS feed, Weather shows today's outlook. Either falls back to the holiday countdown when it has nothing.</p>
+      <p class="hint">Calendar counts down to the next event on the ICS feed, Weather shows today's outlook. Either falls back to the holiday countdown when it has nothing. The feed address lives in the ICS_URL repository secret on GitHub; after changing it, tap Render now.</p>
     </div>
     <div class="field" data-page="landscape" hidden>
       <span class="field-label" id="ls-label">Landscape scenery</span>
@@ -536,26 +569,18 @@
       </div>
       <p class="hint">Season follows the Four Gentlemen: plum in winter, orchid in spring, bamboo in summer, chrysanthemum in autumn.</p>
     </div>
-    <div class="field" data-page="photo" hidden>
-      <span class="field-label">Photos</span>
-      <p class="hint">One photo a day, rotating through this list. The repo is public, so anything added here is visible to anyone. With no photos the frame falls back to the almanac.</p>
-      <div id="photo-list"></div>
-      <input type="file" id="photo-file" accept="image/*" multiple hidden>
-      <button type="button" class="quiet" id="photo-add">Add photos</button>
-      <div class="status" id="photo-status" role="status"></div>
-    </div>
     <div class="field">
       <label for="hotspot">Hotspot label</label>
       <input type="text" id="hotspot" maxlength="24" autocomplete="off" spellcheck="false">
-      <p class="hint">Shown beside the WiFi icon at the top of the page. Plain letters, digits and punctuation only.</p>
+      <p class="hint">Shown beside the WiFi icon at the top of the page. Up to 24 plain letters, digits, spaces or punctuation.</p>
     </div>
-    <button id="save">Save and render</button>
+    <button id="save" disabled>Save and render</button>
     <div class="status" id="save-status" role="status"></div>
   </section>
 
   <section>
     <h2>Render now</h2>
-    <div class="seg" role="radiogroup" aria-label="Mode for this render">
+    <div class="seg" role="radiogroup" aria-label="Light or dark for this render">
       <label><input type="radio" name="once" value="auto" checked><span>As set</span></label>
       <label><input type="radio" name="once" value="light"><span>Light</span></label>
       <label><input type="radio" name="once" value="dark"><span>Dark</span></label>
@@ -563,13 +588,7 @@
     <p class="hint">One shot: scheduled renders go back to following the settings above.</p>
     <button id="render" class="danger">Render now</button>
     <div class="status" id="render-status" role="status"></div>
-    <p class="note" style="margin-top:10px">The frame shows a new render at its next wake, or straight away if you press the EN button on the board behind it.</p>
-  </section>
-
-  <section>
-    <h2>Calendar feed</h2>
-    <p class="note">The Google Calendar address lives in the <strong>ICS_URL</strong> repository secret, so it never sits in the repo itself. To change it, update the secret on GitHub, then come back and tap Render now.</p>
-    <a class="buttonlink" href="https://github.com/chuatzeyee/Tylendar/settings/secrets/actions" target="_blank" rel="noopener">Open repository secrets</a>
+    <p class="note" style="margin-top:10px">The frame shows a new render at its next wake, or straight away with the EN button.</p>
   </section>
 
   <footer>
@@ -577,12 +596,13 @@
     <span>
       <button class="quiet" id="tok-btn">Add token</button>
       <a href="https://github.com/chuatzeyee/Tylendar" target="_blank" rel="noopener" style="margin-left:10px">Repo</a>
+      <a href="https://github.com/chuatzeyee/Tylendar/settings/secrets/actions" target="_blank" rel="noopener" style="margin-left:10px">Secrets</a>
     </span>
   </footer>
 </main>
 
-<dialog id="tok-dialog">
-  <h2>Connect this browser</h2>
+<dialog id="tok-dialog" aria-labelledby="tok-title">
+  <h2 id="tok-title">Connect this browser</h2>
   <p class="note">Writes go through the GitHub API with a fine grained token that stays in this browser only. Treat it like a password.</p>
   <ol>
     <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Create a fine grained token</a> (sign in to GitHub if asked).</li>
@@ -590,8 +610,8 @@
     <li>Permissions: <strong>Contents, Read and write</strong> and <strong>Actions, Read and write</strong>.</li>
     <li>Generate it, copy it, paste it below.</li>
   </ol>
-  <input type="password" id="tok-input" placeholder="github_pat_..." autocomplete="off" aria-label="Personal access token">
-  <div class="status err" id="tok-status" role="status"></div>
+  <input type="password" id="tok-input" placeholder="github_pat_..." autocomplete="off" enterkeyhint="go" aria-label="Personal access token">
+  <div class="status" id="tok-status" role="status"></div>
   <div class="row">
     <button class="quiet" id="tok-cancel">Cancel</button>
     <button id="tok-remove" class="quiet">Remove saved</button>
@@ -609,7 +629,7 @@ const RAW = "https://raw.githubusercontent.com/" + OWNER + "/" + REPO + "/main";
 const SETTINGS_PATH = "generator/settings.json";
 const TOKEN_KEY = "tylendar_token";
 const WAKES = [20, 7 * 60 + 30, 13 * 60, 19 * 60];
-const HOTSPOT_RE = /^[ -~]{1,24}$/;
+const HOTSPOT_RE = /^[ -~]{0,24}$/;
 
 const $ = (id) => document.getElementById(id);
 const token = () => localStorage.getItem(TOKEN_KEY) || "";
@@ -623,7 +643,10 @@ function sgtMinutes() {
 }
 
 function applyClockTheme() {
-  document.body.classList.toggle("dark", sgtMinutes() >= 19 * 60);
+  const dark = sgtMinutes() >= 19 * 60;
+  document.body.classList.toggle("dark", dark);
+  document.documentElement.style.colorScheme = dark ? "dark" : "light";
+  $("meta-theme").content = dark ? "#141414" : "#f7f3ea";
 }
 
 async function gh(path, opts = {}) {
@@ -633,11 +656,12 @@ async function gh(path, opts = {}) {
     ...opts.headers,
   };
   if (token()) headers.Authorization = "Bearer " + token();
-  const res = await fetch(API + path, { ...opts, headers });
+  const res = await fetch(API + path, { ...opts, headers, cache: "no-store" });
   if (res.status === 401) throw new Error("Token rejected. Replace it via Add token.");
   if (res.status === 403 || res.status === 429) {
-    if (res.headers.get("x-ratelimit-remaining") === "0") {
-      throw new Error("GitHub rate limit hit. Try again in a few minutes.");
+    if (res.status === 429 || res.headers.get("x-ratelimit-remaining") === "0" ||
+        res.headers.get("retry-after")) {
+      throw new Error("GitHub asked for a pause. Wait a minute and try again.");
     }
     const scope = path.startsWith("/actions/") ? "Actions" : "Contents";
     throw new Error("The token is missing the " + scope + " permission. Edit it on GitHub, grant " + scope + ", Read and write.");
@@ -664,7 +688,9 @@ const b64ToUtf8 = (b64) => {
 /* ---------- panel card ---------- */
 
 function bustPreview() {
-  $("preview").src = RAW + "/output/preview.png?t=" + Date.now();
+  const url = RAW + "/output/preview.png?t=" + Date.now();
+  $("preview").src = url;
+  $("preview-link").href = url;
 }
 
 function ago(iso) {
@@ -712,16 +738,24 @@ async function refreshPanelMeta() {
   }
 }
 
-/* After an action, wait for a new run to appear, then finish. */
-async function watchRender(prevId, statusEl) {
+/* After an action, wait for a new run to appear, then finish. A newer
+   action bumps watchSeq, which retires every older watcher. */
+let watchSeq = 0;
+
+async function watchRender(prevId, statusEl, startedAt) {
+  const my = ++watchSeq;
+  let seen = false;
   for (let i = 0; i < 50; i++) {
     await new Promise((r) => setTimeout(r, 6000));
+    if (my !== watchSeq) return;
     let runs;
     try {
       runs = await gh("/actions/workflows/render.yml/runs?per_page=1");
     } catch { continue; }
+    if (my !== watchSeq) return;
     const run = runs.workflow_runs[0];
-    if (!run || run.id === prevId) continue;
+    if (!run || run.id === prevId || Date.parse(run.created_at) < startedAt - 60000) continue;
+    seen = true;
     $("render-state").textContent = "Rendering now";
     $("render-state").classList.add("busy");
     if (run.status === "completed") {
@@ -737,7 +771,10 @@ async function watchRender(prevId, statusEl) {
       return;
     }
   }
-  statusEl.textContent = "Still running, check the Actions tab.";
+  refreshPanelMeta();
+  statusEl.textContent = seen
+    ? "Still running, check the Actions tab."
+    : "No render started. Check the Actions tab on GitHub.";
 }
 
 /* ---------- settings ---------- */
@@ -763,6 +800,10 @@ function pickedOpts() {
   return out;
 }
 
+/* Save stays disabled until the form reflects the repo, so a save can
+   never overwrite live settings with the form's defaults. */
+let settingsLoaded = false;
+
 async function loadSettings() {
   try {
     const file = await gh("/contents/" + SETTINGS_PATH + "?ref=main");
@@ -779,9 +820,14 @@ async function loadSettings() {
     }
     currentPage = PAGES.includes(s.page) ? s.page : "almanac";
     layoutPageTiles();
+    settingsLoaded = true;
+    $("save").disabled = false;
+    $("save-status").textContent = "";
+    $("save-status").classList.remove("err");
   } catch (e) {
-    $("save-status").textContent = "Could not load settings (" + e.message + ")";
+    $("save-status").textContent = "Could not load settings (" + e.message + "). Retrying";
     $("save-status").classList.add("err");
+    setTimeout(loadSettings, 4000);
   }
 }
 
@@ -822,7 +868,7 @@ async function saveSettings() {
   status.classList.remove("err");
   const hotspot = $("hotspot").value.trim();
   if (!HOTSPOT_RE.test(hotspot)) {
-    status.textContent = "Hotspot label must be 1 to 24 plain ASCII characters.";
+    status.textContent = "Hotspot label must be up to 24 plain ASCII characters.";
     status.classList.add("err");
     return;
   }
@@ -832,11 +878,15 @@ async function saveSettings() {
   btn.disabled = true;
   status.textContent = "Saving";
   try {
+    const startedAt = Date.now();
     const prevId = await refreshPanelMeta();
-    await putSettings("portal: update settings",
-      (s) => ({ ...s, hotspot, mode, page: currentPage, ...pickedOpts() }));
+    await putSettings("portal: update settings", (s) => {
+      const next = { ...s, hotspot, mode, page: currentPage, ...pickedOpts() };
+      if (!hotspot) delete next.hotspot;
+      return next;
+    });
     status.textContent = "Saved. Rendering";
-    watchRender(prevId, status);
+    watchRender(prevId, status, startedAt);
   } catch (e) {
     settingsSha = null;
     status.textContent = e.message;
@@ -863,7 +913,6 @@ async function photosOnRepo() {
 }
 
 async function loadPhotos() {
-  photosLoaded = true;
   const list = $("photo-list");
   const status = $("photo-status");
   let files;
@@ -874,6 +923,7 @@ async function loadPhotos() {
     status.classList.add("err");
     return;
   }
+  photosLoaded = true;
   list.textContent = "";
   for (const f of files) {
     const row = document.createElement("div");
@@ -989,8 +1039,20 @@ async function addPhotos(files) {
 
 /* ---------- page picker ---------- */
 
-const PAGES = ["almanac", "poem", "character", "landscape", "weather", "month", "year", "joke", "photo", "flora"];
+const PAGES = ["almanac", "poem", "character", "landscape", "weather", "month", "year", "joke", "photo", "flora", "quote"];
 let currentPage = "almanac";
+
+/* Show only the fields and sections that belong to a page, and label
+   the per-page options group under Settings. */
+function revealPageFields(value) {
+  document.querySelectorAll("[data-page]").forEach((f) => {
+    f.hidden = f.dataset.page !== value;
+  });
+  const opts = document.querySelector('.field[data-page="' + value + '"]');
+  $("page-opts").hidden = !opts;
+  $("page-opts").textContent = opts ? "For the " + value + " page" : "";
+  if (value === "photo" && !photosLoaded) loadPhotos();
+}
 
 /* Move the current page's tile into the "now showing" slot and the
    rest into the grid, keeping the declared order. Also re-checks the
@@ -1004,11 +1066,8 @@ function layoutPageTiles() {
     input.checked = now;
     (now ? $("page-now") : $("page-grid")).appendChild(tile);
   });
-  document.querySelectorAll(".field[data-page]").forEach((f) => {
-    f.hidden = f.dataset.page !== currentPage;
-  });
+  revealPageFields(currentPage);
   updatePoemCard();
-  if (currentPage === "photo" && !photosLoaded) loadPhotos();
 }
 
 /* ---------- today's poem, in English ---------- */
@@ -1061,16 +1120,21 @@ async function setPage(value) {
     return;
   }
   const inputs = document.querySelectorAll("input[name=page]");
+  const hadFocus = $("page-radios").contains(document.activeElement);
   inputs.forEach((i) => { i.disabled = true; });
   status.textContent = "Saving";
+  revealPageFields(value);
   try {
+    const startedAt = Date.now();
     const prevId = await refreshPanelMeta();
     await putSettings("portal: switch page to " + value,
-      (s) => ({ ...s, page: value }));
+      (s) => (settingsLoaded ? { ...s, page: value, ...pickedOpts() } : { ...s, page: value }));
     currentPage = value;
     layoutPageTiles();
-    status.textContent = "Saved. Rendering";
-    watchRender(prevId, status);
+    status.textContent = document.querySelector('.field[data-page="' + value + '"]')
+      ? "Saved. Rendering. This page's options are under Settings."
+      : "Saved. Rendering";
+    watchRender(prevId, status, startedAt);
   } catch (e) {
     settingsSha = null;
     layoutPageTiles();
@@ -1078,6 +1142,7 @@ async function setPage(value) {
     status.classList.add("err");
   } finally {
     inputs.forEach((i) => { i.disabled = false; });
+    if (hadFocus) document.querySelector("input[name=page]:checked").focus();
   }
 }
 
@@ -1092,13 +1157,14 @@ async function renderNow() {
   btn.disabled = true;
   status.textContent = "Asking GitHub to render";
   try {
+    const startedAt = Date.now();
     const prevId = await refreshPanelMeta();
     await gh("/actions/workflows/render.yml/dispatches", {
       method: "POST",
       body: JSON.stringify({ ref: "main", inputs: { mode } }),
     });
     status.textContent = "Queued. Rendering";
-    watchRender(prevId, status);
+    watchRender(prevId, status, startedAt);
   } catch (e) {
     status.textContent = e.message;
     status.classList.add("err");
@@ -1119,18 +1185,34 @@ function refreshTokenChip() {
 function openTokenDialog() {
   $("tok-input").value = "";
   $("tok-status").textContent = "";
+  $("tok-status").classList.remove("err");
   $("tok-remove").style.display = token() ? "" : "none";
   $("tok-dialog").showModal();
 }
 
-function saveToken() {
+async function saveToken() {
+  const status = $("tok-status");
+  status.classList.remove("err");
   const v = $("tok-input").value.trim();
   if (!/^(github_pat_|ghp_)[A-Za-z0-9_]{20,}$/.test(v)) {
-    $("tok-status").textContent = "That does not look like a GitHub token.";
+    status.textContent = "That does not look like a GitHub token.";
+    status.classList.add("err");
     return;
   }
-  localStorage.setItem(TOKEN_KEY, v);
-  location.reload();
+  const btn = $("tok-save");
+  btn.disabled = true;
+  status.textContent = "Checking with GitHub";
+  try {
+    await validateToken(v);
+    await probeGrants(v);
+    localStorage.setItem(TOKEN_KEY, v);
+    location.reload();
+  } catch (e) {
+    status.textContent = e.message;
+    status.classList.add("err");
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 /* ---------- gate ---------- */
@@ -1144,7 +1226,7 @@ async function validateToken(t) {
     "X-GitHub-Api-Version": "2022-11-28",
     Authorization: "Bearer " + t,
   };
-  const res = await fetch(API, { headers });
+  const res = await fetch(API, { headers, cache: "no-store" });
   if (res.status === 401) throw new Error("GitHub rejected that token.");
   if (!res.ok) throw new Error("GitHub said " + res.status + ". Try again in a minute.");
   const repo = await res.json();
@@ -1166,8 +1248,9 @@ async function probeGrants(t) {
     "Content-Type": "application/json",
   };
   const rateLimited = (res) =>
-    res.headers.get("x-ratelimit-remaining") === "0"
-      ? new Error("GitHub rate limit hit. Try again in a few minutes.")
+    res.status === 429 || res.headers.get("x-ratelimit-remaining") === "0" ||
+    res.headers.get("retry-after")
+      ? new Error("GitHub asked for a pause. Wait a minute and try again.")
       : null;
   const missing = (scope) =>
     new Error("That token is missing the " + scope + " permission. Edit it on GitHub, grant " + scope + ", Read and write.");
@@ -1192,6 +1275,9 @@ async function probeGrants(t) {
 function startApp() {
   $("gate").hidden = true;
   $("app").hidden = false;
+  const h1 = document.querySelector("#app h1");
+  h1.tabIndex = -1;
+  h1.focus();
   bustPreview();
   wakeLine();
   refreshTokenChip();
@@ -1201,6 +1287,7 @@ function startApp() {
 }
 
 async function unlock() {
+  if ($("gate-unlock").disabled) return;
   const status = $("gate-status");
   status.classList.remove("err");
   const v = $("gate-input").value.trim();
@@ -1228,14 +1315,20 @@ async function unlock() {
 async function boot() {
   const t = token();
   if (!t) return;
+  const status = $("gate-status");
+  const btn = $("gate-unlock");
+  status.textContent = "Unlocking with the token saved on this device";
+  btn.disabled = true;
   try {
     await validateToken(t);
     startApp();
   } catch (e) {
     /* Keep the stored token: a network blip must not lock the user
        out for good. Pasting a fresh one overwrites it. */
-    $("gate-status").textContent = e.message;
-    $("gate-status").classList.add("err");
+    status.textContent = e.message;
+    status.classList.add("err");
+  } finally {
+    btn.disabled = false;
   }
 }
 
@@ -1243,8 +1336,15 @@ async function boot() {
 
 $("save").addEventListener("click", saveSettings);
 $("render").addEventListener("click", renderNow);
+/* Debounced so arrow-keying through the tiles commits once, not once
+   per keypress. Tapping back to the current page cancels the commit. */
+let pageTimer = 0;
 $("page-radios").addEventListener("change", (e) => {
-  if (e.target.name === "page" && e.target.value !== currentPage) setPage(e.target.value);
+  if (e.target.name !== "page") return;
+  clearTimeout(pageTimer);
+  if (e.target.value === currentPage) return;
+  const v = e.target.value;
+  pageTimer = setTimeout(() => setPage(v), 600);
 });
 $("photo-add").addEventListener("click", () => $("photo-file").click());
 $("photo-file").addEventListener("change", (e) => {
@@ -1258,8 +1358,13 @@ $("tok-remove").addEventListener("click", () => {
   localStorage.removeItem(TOKEN_KEY);
   location.reload();
 });
+$("tok-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !$("tok-save").disabled) saveToken();
+});
 $("gate-unlock").addEventListener("click", unlock);
-$("gate-input").addEventListener("keydown", (e) => { if (e.key === "Enter") unlock(); });
+$("gate-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !$("gate-unlock").disabled) unlock();
+});
 
 applyClockTheme();
 setInterval(applyClockTheme, 60000);
