@@ -69,7 +69,7 @@ def load_settings():
 SETTINGS = load_settings()
 HOTSPOT = str(SETTINGS.get("hotspot") or "").strip() or "TyBatan"
 PAGES = ("almanac", "poem", "character", "landscape", "weather", "month",
-         "year", "joke", "photo", "flora")
+         "year", "joke", "photo", "flora", "quote")
 
 BLACK = (12, 12, 12)
 WHITE = (255, 255, 255)

@@ -101,6 +101,7 @@ internal val PAGE_ZH = mapOf(
     "joke" to "一罵",
     "photo" to "相片",
     "flora" to "四君",
+    "quote" to "冷語",
 )
 
 private val PAGE_KEYS = mapOf(
@@ -114,6 +115,7 @@ private val PAGE_KEYS = mapOf(
     Key.J to "joke",
     Key.O to "photo",
     Key.F to "flora",
+    Key.Q to "quote",
 )
 
 @Composable

@@ -23,7 +23,7 @@ const val API = "https://api.github.com/repos/$OWNER/$REPO"
 const val RAW = "https://raw.githubusercontent.com/$OWNER/$REPO/main"
 const val SETTINGS_PATH = "generator/settings.json"
 
-val PAGES = listOf("almanac", "poem", "character", "landscape", "weather", "month", "year", "joke", "photo", "flora")
+val PAGES = listOf("almanac", "poem", "character", "landscape", "weather", "month", "year", "joke", "photo", "flora", "quote")
 val MODES = listOf("auto", "light", "dark")
 
 /* Per-page render options; mirrors the portal. The first value is the
